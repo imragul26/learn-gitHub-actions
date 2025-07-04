@@ -1,18 +1,18 @@
-changelog:
-  categories:
-    - title: 🚀 Features
-      labels:
-        - "feature"
-    - title: 🐛 Bug Fixes
-      labels:
-        - "bug"
-    - title: 🔧 Maintenance
-      labels:
-        - "chore"
-        - "refactor"
-    - title: 📦 Dependencies
-      labels:
-        - "dependencies"
-    - title: Other Changes
-      labels:
-        - "*"
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [closed]
+
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
