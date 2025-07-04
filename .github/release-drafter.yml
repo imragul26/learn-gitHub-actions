@@ -17,3 +17,7 @@ categories:
   - title: Other Changes
     labels:
       - "*"
+template: |
+  ## Changes
+
+  $CHANGES
