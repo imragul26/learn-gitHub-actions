@@ -1,23 +1,33 @@
+# .github/release.yaml (or .github/release-drafter.yml)
 name-template: 'v$NEXT_PATCH_VERSION'
 tag-template: 'v$NEXT_PATCH_VERSION'
 categories:
-  - title: 🚀 Features
+  - title: '🚀 Features'
     labels:
-      - "feature"
-  - title: 🐛 Bug Fixes
+      - 'feature'
+      - 'enhancement'
+  - title: '🐛 Bug Fixes'
     labels:
-      - "bug"
-  - title: 🔧 Maintenance
+      - 'bug'
+      - 'fix'
+  - title: '🔧 Maintenance'
     labels:
-      - "chore"
-      - "refactor"
-  - title: 📦 Dependencies
+      - 'chore'
+      - 'refactor'
+      - 'ci'
+  - title: '📦 Dependencies'
     labels:
-      - "dependencies"
-  - title: Other Changes
+      - 'dependencies'
+      - 'deps'
+  - title: '📖 Documentation'
     labels:
-      - "*"
+      - 'docs'
+  - title: 'Other Changes'
+    labels:
+      - '*'
 template: |
-  ## Changes
+  ## What’s Changed
 
   $CHANGES
+
+  **Full Changelog**: $PREVIOUS_TAG...$NEXT_TAG
