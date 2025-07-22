@@ -12,7 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@v6
-        with:
-          config-name: release-drafter.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-name: release-drafter.yml
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          generate_release_notes: true
