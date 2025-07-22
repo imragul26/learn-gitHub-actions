@@ -11,6 +11,7 @@ name: Java CI with Maven
 on:
   push:
     branches: [ "main" ]
+    tags: ['v*']
   workflow_dispatch:  
 
 
@@ -21,12 +22,6 @@ jobs:
     steps:
     - name: Check out code 
       uses: actions/checkout@v2
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          Auto-generated release notes: ${{ github.event.head_commit.message }}
-          generate_release_notes: true
          
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -47,3 +42,12 @@ jobs:
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
         docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name || 'v1.0.0' }}
+        release_name: Release ${{ github.ref_name || 'v1.0.0' }}
+        generate_release_notes: true
