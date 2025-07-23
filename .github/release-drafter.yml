@@ -1,0 +1,26 @@
+name-template: 'v$NEXT_PATCH_VERSION'  # Auto-increments version (e.g., v1.0.0 → v1.0.1)
+tag-template: 'v$NEXT_PATCH_VERSION'   # Same as name-template for consistency
+
+categories:
+  - title: '🏗️ Origination - Bug Fixes'
+    labels: ['bug', 'origination']  # PRs with these labels appear here
+  - title: '🏗️ Origination - Features'
+    labels: ['feature', 'origination']
+  - title: '🔧 Maintenance - Bug Fixes'
+    labels: ['bug', 'maintenance']
+  - title: '🔧 Maintenance - Features'
+    labels: ['feature', 'maintenance']
+  - title: '🖥️ Attestation - Bug Fixes'
+    labels: ['bug', 'attestation']
+  - title: '🖥️ Attestation - Features'
+    labels: ['feature', 'attestation']
+  - title: 'Other Changes'
+    labels: ['*']
+	
+
+template: |
+  ## What’s Changed
+
+  $CHANGES  # Auto-populated with PRs grouped by category
+
+  **Full Changelog**: $PREVIOUS_TAG...$NEXT_TAG  # Link to compare changes
