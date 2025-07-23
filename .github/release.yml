@@ -1,42 +1,34 @@
 changelog:
-   categories:
-    # Functional categories with module tags
-    - title: "⚠️ BREAKING CHANGES"
-      labels: ["breaking-change"]
-      body: |
-        {{#each commits}}
-        - {{this.subject}} {{#if (contains this.labels "origination")}}[Origination]{{/if}}{{#if (contains this.labels "maintenance")}}[Maintenance]{{/if}}{{#if (contains this.labels "attestation")}}[Attestation]{{/if}} ([#{{this.pr}}]({{this.pr_url}}))
-        {{/each}}
+  exclude:
+    labels: ["skip-release", "chore", "ci"]
 
-    - title: "✨ New Features"
-      labels: ["feature", "enhancement"]
-      body: |
-        {{#each commits}}
-        - {{this.subject}} {{#if (contains this.labels "origination")}}[Origination]{{/if}}{{#if (contains this.labels "maintenance")}}[Maintenance]{{/if}}{{#if (contains this.labels "attestation")}}[Attestation]{{/if}} ([#{{this.pr}}]({{this.pr_url}}))
-        {{/each}}
+  categories:
+    # Module-specific categories FIRST
+    - title: "🏗️ Origination - Bug Fixes"
+      labels: ["bug", "origination"]
       
-    - title: "🐞 Defect Fixes"
-      labels: ["bug", "hotfix"]
-      body: |
-        {{#each commits}}
-        - {{this.subject}} {{#if (contains this.labels "origination")}}[Origination]{{/if}}{{#if (contains this.labels "maintenance")}}[Maintenance]{{/if}}{{#if (contains this.labels "attestation")}}[Attestation]{{/if}} ([#{{this.pr}}]({{this.pr_url}}))
-        {{/each}}
+    - title: "🏗️ Origination - Features"
+      labels: ["feature", "origination"]
 
-    - title: "🔄 API Updates"
-      labels: ["api-update"]
-      body: |
-        {{#each commits}}
-        - {{this.subject}} {{#if (contains this.labels "origination")}}[Origination]{{/if}}{{#if (contains this.labels "maintenance")}}[Maintenance]{{/if}}{{#if (contains this.labels "attestation")}}[Attestation]{{/if}} ([#{{this.pr}}]({{this.pr_url}}))
-        {{/each}}
+    - title: "🔧 Maintenance - Bug Fixes"
+      labels: ["bug", "maintenance"]
 
-    # Other sections (unchanged)
+    - title: "🔧 Maintenance - Features"
+      labels: ["feature", "maintenance"]
+
+    - title: "🖥️ Attestation - Bug Fixes"
+      labels: ["bug", "attestation"]
+
+    - title: "🖥️ Attestation - Features"
+      labels: ["feature", "attestation"]
+
+    # General fallbacks (without module tags)
+    - title: "🐞 Other Bug Fixes"
+      labels: ["bug"]
+      
+    - title: "✨ Other Features"
+      labels: ["feature"]
+
     - title: "📦 Dependency Updates"
       labels: ["dependencies"]
       collapse: true
-
-    - title: "📚 Documentation"
-      labels: ["documentation"]
-      collapse: true
-
-    - title: "⚙️ Other Changes"
-      labels: ["*"]
