@@ -4,12 +4,12 @@ changelog:
   categories:
     - title: Breaking Changes 🛠
       labels:
-        - Semver-Major
-        - breaking-change
+        - 'Semver-Major'
+        - 'breaking-change'
     - title: Exciting New Features 🎉
       labels:
-        - Semver-Minor
-        - enhancement
+        - 'Semver-Minor'
+        - 'enhancement'
     - title: Other Changes
       labels:
         - "*"
