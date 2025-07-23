@@ -1,40 +1,41 @@
 changelog:
-  exclude:
-    labels: ["skip-release", "chore", "ci"]
-
-  categories:
-    # Existing functional categories
+   categories:
+    # Functional categories with module tags
     - title: "⚠️ BREAKING CHANGES"
       labels: ["breaking-change"]
+      body: |
+        {{#each commits}}
+        - {{this.subject}} {{#if (contains this.labels "origination")}}[Origination]{{/if}}{{#if (contains this.labels "maintenance")}}[Maintenance]{{/if}}{{#if (contains this.labels "attestation")}}[Attestation]{{/if}} ([#{{this.pr}}]({{this.pr_url}}))
+        {{/each}}
 
     - title: "✨ New Features"
       labels: ["feature", "enhancement"]
+      body: |
+        {{#each commits}}
+        - {{this.subject}} {{#if (contains this.labels "origination")}}[Origination]{{/if}}{{#if (contains this.labels "maintenance")}}[Maintenance]{{/if}}{{#if (contains this.labels "attestation")}}[Attestation]{{/if}} ([#{{this.pr}}]({{this.pr_url}}))
+        {{/each}}
       
     - title: "🐞 Defect Fixes"
       labels: ["bug", "hotfix"]
+      body: |
+        {{#each commits}}
+        - {{this.subject}} {{#if (contains this.labels "origination")}}[Origination]{{/if}}{{#if (contains this.labels "maintenance")}}[Maintenance]{{/if}}{{#if (contains this.labels "attestation")}}[Attestation]{{/if}} ([#{{this.pr}}]({{this.pr_url}}))
+        {{/each}}
 
     - title: "🔄 API Updates"
       labels: ["api-update"]
+      body: |
+        {{#each commits}}
+        - {{this.subject}} {{#if (contains this.labels "origination")}}[Origination]{{/if}}{{#if (contains this.labels "maintenance")}}[Maintenance]{{/if}}{{#if (contains this.labels "attestation")}}[Attestation]{{/if}} ([#{{this.pr}}]({{this.pr_url}}))
+        {{/each}}
 
+    # Other sections (unchanged)
     - title: "📦 Dependency Updates"
       labels: ["dependencies"]
       collapse: true
 
     - title: "📚 Documentation"
       labels: ["documentation"]
-      collapse: true
-
-    # New collapsible module sections
-    - title: "🏗️ Public Origination"
-      labels: ["origination"]
-      collapse: true
-
-    - title: "🔧 Public Maintenance"
-      labels: ["maintenance"]
-      collapse: true
-
-    - title: "🖥️ Attestation UI"
-      labels: ["attestation"]
       collapse: true
 
     - title: "⚙️ Other Changes"
