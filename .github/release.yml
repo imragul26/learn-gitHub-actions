@@ -1,15 +1,32 @@
-# .github/release.yml
-
 changelog:
   categories:
-    - title: Breaking Changes 🛠
-      labels:
-        - 'Semver-Major'
-        - 'breaking-change'
-    - title: Exciting New Features 🎉
-      labels:
-        - 'Semver-Minor'
-        - 'enhancement'
-    - title: Other Changes
-      labels:
-        - "*"
+    - title: "⚠️ BREAKING CHANGES"
+      labels: ["breaking-change"]
+
+    - title: "🐞 Defect Fixes"
+      labels: ["bug", "hotfix"]
+      body: |
+        {{#each commits}}
+        - {{this.subject}} {{#if (hasLabels this.labels "origination")}}(Origination){{/if}}{{#if (hasLabels this.labels "maintenance")}}(Maintenance){{/if}}{{#if (hasLabels this.labels "attestation")}}(Attestation){{/if}} ([#{{this.pr}}]({{this.pr_url}}))
+        {{/each}}
+
+    - title: "✨ New Features"
+      labels: ["feature", "enhancement"]
+      body: |
+        {{#each commits}}
+        - {{this.subject}} {{#if (hasLabels this.labels "origination")}}(Origination){{/if}}{{#if (hasLabels this.labels "maintenance")}}(Maintenance){{/if}}{{#if (hasLabels this.labels "attestation")}}(Attestation){{/if}} ([#{{this.pr}}]({{this.pr_url}}))
+        {{/each}}
+
+    - title: "🔄 API Updates"
+      labels: ["api-update"]
+
+    - title: "📦 Dependency Updates"
+      labels: ["dependencies"]
+      collapse: true
+
+    - title: "📚 Documentation"
+      labels: ["documentation"]
+      collapse: true
+
+    - title: "⚙️ Other Changes"
+      labels: ["*"]
