@@ -1,15 +1,25 @@
-# .github/release.yml
-
 changelog:
   categories:
-    - title: Breaking Changes 🛠
-      labels:
-        - 'Semver-Major'
-        - 'breaking-change'
-    - title: Exciting New Features 🎉
-      labels:
-        - 'Semver-Minor'
-        - 'enhancement'
-    - title: Other Changes
-      labels:
-        - "*"
+    - title: "⚠️ BREAKING CHANGES"
+      labels: ["breaking-change"]
+
+    - title: "✨ New Features"
+      labels: ["feature", "enhancement"]
+      
+    - title: "🐛 Defect Fixes"
+      labels: ["bug", "hotfix"]
+
+    - title: "🔄 API Updates"
+      labels: ["api-update"]
+      collapse: false
+
+    - title: "📦 Dependency Updates"
+      labels: ["dependencies"]
+      collapse: true
+
+    - title: "📚 Documentation"
+      labels: ["documentation"]
+      collapse: true
+
+    - title: "⚙️ Other Changes"
+      labels: ["*"]
