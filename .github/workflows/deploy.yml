@@ -18,8 +18,10 @@ on:
 
 
 jobs:
-  build:
-
+  update_release_draft:
+    permissions:
+      contents: write
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@main
