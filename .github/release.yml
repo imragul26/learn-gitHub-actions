@@ -5,6 +5,7 @@ changelog:
 
     - title: "🐞 Defect Fixes"
       labels: ["bug", "hotfix"]
+      collapse: true
       body: |
         {{#each commits}}
         - {{this.subject}} {{#if (hasLabels this.labels "origination")}}(Origination){{/if}}{{#if (hasLabels this.labels "maintenance")}}(Maintenance){{/if}}{{#if (hasLabels this.labels "attestation")}}(Attestation){{/if}} ([#{{this.pr}}]({{this.pr_url}}))
@@ -12,6 +13,7 @@ changelog:
 
     - title: "✨ New Features"
       labels: ["feature", "enhancement"]
+      collapse: true
       body: |
         {{#each commits}}
         - {{this.subject}} {{#if (hasLabels this.labels "origination")}}(Origination){{/if}}{{#if (hasLabels this.labels "maintenance")}}(Maintenance){{/if}}{{#if (hasLabels this.labels "attestation")}}(Attestation){{/if}} ([#{{this.pr}}]({{this.pr_url}}))
