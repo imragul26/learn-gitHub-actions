@@ -1,34 +1,48 @@
-# .github/workflows/generate-changelog.yml
-name: Generate Changelog
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Java CI with Maven
 
 on:
   workflow_dispatch:
     inputs:
-      tag_name:
-        description: 'Release tag (e.g., v1.0.0)'
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
         required: true
         type: string
-      previous_tag:
-        description: 'Previous tag to compare with (optional)'
-        required: false
-        type: string
+
 
 jobs:
-  generate_changelog:
+  update_release_draft:
+    permissions:
+      contents: write
+      pull-requests: write
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    steps:   
+      - name: Check out code 
+        uses: actions/checkout@v2
+         
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          fetch-depth: 0  # Needed to get full git history
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+          
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Generate Changelog
-        uses: release-drafter/release-drafter@v6
-        with:
-          config-name: release-drafter.yml
-          tag: ${{ inputs.tag_name }}
-          previous-tag: ${{ inputs.previous_tag || '' }}
-          disable-autolabeler: true
-          publish: false
+      - name: Build, tag, and push image to Amazon ECR
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: github-actions
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
