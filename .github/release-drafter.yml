@@ -1,41 +1,47 @@
-# .github/release-drafter.yml
-template: |
-  ## 🏗️ Origination
-  ### Bug Fixes
-  ${{#each (filter commits labels="bug,origination")}}
-  - ${{subject}} (#${{pullRequest.number}})
-  ${{/each}}
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
  
-  ### Features
-  ${{#each (filter commits labels="feature,origination")}}
-  - ${{subject}} (#${{pullRequest.number}})
-  ${{/each}}
+categories:
+  - title: "🚨 Breaking Changes"
+    labels: ["breaking-change"]
+  - title: "✨ Features"
+    labels: ["feature"]
+  - title: "🐛 Bug Fixes"
+    labels: ["bug"]
+  - title: "🛠 Enhancements"
+    labels: ["enhancement"]
+  - title: "📦 Dependencies"
+    labels: ["dependencies"]
+    collapse-after: 2
+  - title: "📋 Other Changes"
+    labels: []
+    # fallback bucket when PRs don't match above categories
  
-  ## 🔧 Maintenance
-  ### Bug Fixes
-  ${{#each (filter commits labels="bug,maintenance")}}
-  - ${{subject}} (#${{pullRequest.number}})
-  ${{/each}}
+label-extractors:
+  module:
+    labels:
+      - origination
+      - maintenance
+      - testation
  
-  ### Features
-  ${{#each (filter commits labels="feature,maintenance")}}
-  - ${{subject}} (#${{pullRequest.number}})
-  ${{/each}}
+change-template: |
+  - $TITLE$IS_MODULE – #$NUMBER
  
-  ## 🖥️ Attestation
-  ### Bug Fixes
-  ${{#each (filter commits labels="bug,attestation")}}
-  - ${{subject}} (#${{pullRequest.number}})
-  ${{/each}}
+# Template if there are no matching PRs
+no-changes-template: "No significant changes."
  
-  ### Features
-  ${{#each (filter commits labels="feature,attestation")}}
-  - ${{subject}} (#${{pullRequest.number}})
-  ${{/each}}
+# Define custom template variables
+template-variables:
+  # If $MODULE is defined, prefix it in brackets
+  IS_MODULE: $IS_MODULE_TEMPLATE
  
-  <details>
-<summary>📦 Other Changes</summary>
-  ${{#each (filter commits labels="!bug,!feature,!origination,!maintenance,!attestation")}}
-  - ${{subject}} (#${{pullRequest.number}})
-  ${{/each}}
-</details>
+# Custom rendering logic for module label (optional)
+replacers:
+  - search: '\$IS_MODULE_TEMPLATE'
+    replace: >-
+      ${{
+        contains(labels, 'origination') && ' (`origination`)' ||
+        contains(labels, 'maintenance') && ' (`maintenance`)' ||
+        contains(labels, 'testation') && ' (`testation`)' ||
+        ''
+      }}
