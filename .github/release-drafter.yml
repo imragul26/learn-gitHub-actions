@@ -1,0 +1,41 @@
+# .github/release-drafter.yml
+template: |
+  ## 🏗️ Origination
+  ### Bug Fixes
+  ${{#each (filter commits labels="bug,origination")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+ 
+  ### Features
+  ${{#each (filter commits labels="feature,origination")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+ 
+  ## 🔧 Maintenance
+  ### Bug Fixes
+  ${{#each (filter commits labels="bug,maintenance")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+ 
+  ### Features
+  ${{#each (filter commits labels="feature,maintenance")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+ 
+  ## 🖥️ Attestation
+  ### Bug Fixes
+  ${{#each (filter commits labels="bug,attestation")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+ 
+  ### Features
+  ${{#each (filter commits labels="feature,attestation")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+ 
+  <details>
+<summary>📦 Other Changes</summary>
+  ${{#each (filter commits labels="!bug,!feature,!origination,!maintenance,!attestation")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+</details>
