@@ -2,20 +2,33 @@
 name: Generate Changelog
 
 on:
-  workflow_dispatch:  # Manual trigger only
+  workflow_dispatch:
     inputs:
       tag_name:
         description: 'Release tag (e.g., v1.0.0)'
         required: true
+        type: string
+      previous_tag:
+        description: 'Previous tag to compare with (optional)'
+        required: false
+        type: string
 
 jobs:
   generate_changelog:
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@v6
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed to get full git history
+
+      - name: Generate Changelog
+        uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter.yml
-          tag: ${{ github.event.inputs.tag_name }}  # Use manually provided tag
-          disable-autolabeler: true  # Skip auto-labeling
+          tag: ${{ inputs.tag_name }}
+          previous-tag: ${{ inputs.previous_tag || '' }}
+          disable-autolabeler: true
+          publish: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
