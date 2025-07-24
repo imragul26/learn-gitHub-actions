@@ -30,16 +30,10 @@ label-extractors:
 
 change-template: |
   - $TITLE$IS_MODULE – #$NUMBER
- 
-# Template if there are no matching PRs
-no-changes-template: "No significant changes."
- 
-# Define custom template variables
+
 template-variables:
-  # If $MODULE is defined, prefix it in brackets
   IS_MODULE: $IS_MODULE_TEMPLATE
- 
-# Custom rendering logic for module label (optional)
+
 replacers:
   - search: '\$IS_MODULE_TEMPLATE'
     replace: >-
