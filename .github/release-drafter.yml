@@ -1,26 +1,57 @@
-name-template: 'v$NEXT_PATCH_VERSION'  # Auto-increments version (e.g., v1.0.0 → v1.0.1)
-tag-template: 'v$NEXT_PATCH_VERSION'   # Same as name-template for consistency
-
-categories:
-  - title: '🏗️ Origination - Bug Fixes'
-    labels: ['bug', 'origination']  # PRs with these labels appear here
-  - title: '🏗️ Origination - Features'
-    labels: ['feature', 'origination']
-  - title: '🔧 Maintenance - Bug Fixes'
-    labels: ['bug', 'maintenance']
-  - title: '🔧 Maintenance - Features'
-    labels: ['feature', 'maintenance']
-  - title: '🖥️ Attestation - Bug Fixes'
-    labels: ['bug', 'attestation']
-  - title: '🖥️ Attestation - Features'
-    labels: ['feature', 'attestation']
-  - title: 'Other Changes'
-    labels: ['*']
-	
-
+# .github/release-drafter.yml
 template: |
-  ## What’s Changed
+  # Release Notes ($RESOLVED_VERSION)
+  
+  ## 🏗️ Origination
+  ### Bug Fixes
+  ${{#each (filter commits labels="bug,origination")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
 
-  $CHANGES  # Auto-populated with PRs grouped by category
+  ### Features
+  ${{#each (filter commits labels="feature,origination")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
 
-  **Full Changelog**: $PREVIOUS_TAG...$NEXT_TAG  # Link to compare changes
+  ## 🔧 Maintenance
+  ### Bug Fixes
+  ${{#each (filter commits labels="bug,maintenance")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+
+  ### Features
+  ${{#each (filter commits labels="feature,maintenance")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+
+  ## 🖥️ Attestation
+  ### Bug Fixes
+  ${{#each (filter commits labels="bug,attestation")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+
+  ### Features
+  ${{#each (filter commits labels="feature,attestation")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+
+  <details>
+  <summary>📦 Other Changes (${{count (filter commits labels="!bug,!feature,!origination,!maintenance,!attestation")}})</summary>
+  
+  ### Dependencies
+  ${{#each (filter commits labels="dependencies")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+
+  ### Documentation
+  ${{#each (filter commits labels="documentation")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+
+  ### Uncategorized
+  ${{#each (filter commits labels="!bug,!feature,!origination,!maintenance,!attestation,!dependencies,!documentation")}}
+  - ${{subject}} (#${{pullRequest.number}})
+  ${{/each}}
+  </details>
+
+  **Full Changelog**: ${{compareUrl}}
