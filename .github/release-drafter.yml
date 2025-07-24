@@ -1,7 +1,5 @@
 # .github/release-drafter.yml
 template: |
-  # Release Notes ($RESOLVED_VERSION)
-  
   ## 🏗️ Origination
   ### Bug Fixes
   ${{#each (filter commits labels="bug,origination")}}
@@ -36,22 +34,8 @@ template: |
   ${{/each}}
 
   <details>
-  <summary>📦 Other Changes (${{count (filter commits labels="!bug,!feature,!origination,!maintenance,!attestation")}})</summary>
-  
-  ### Dependencies
-  ${{#each (filter commits labels="dependencies")}}
-  - ${{subject}} (#${{pullRequest.number}})
-  ${{/each}}
-
-  ### Documentation
-  ${{#each (filter commits labels="documentation")}}
-  - ${{subject}} (#${{pullRequest.number}})
-  ${{/each}}
-
-  ### Uncategorized
-  ${{#each (filter commits labels="!bug,!feature,!origination,!maintenance,!attestation,!dependencies,!documentation")}}
+  <summary>📦 Other Changes</summary>
+  ${{#each (filter commits labels="!bug,!feature,!origination,!maintenance,!attestation")}}
   - ${{subject}} (#${{pullRequest.number}})
   ${{/each}}
   </details>
-
-  **Full Changelog**: ${{compareUrl}}
