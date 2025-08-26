@@ -2,104 +2,17 @@ name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 
 template: |
-  ## What's Changed
-  
-  $FEATURES
-  $FIXES
-  $CHORES
-  $DOCS
-  $OTHER
-
-  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
+  $COMMIT_MESSAGES
 
 template-variables:
-  FEATURES: $FEATURES_TEMPLATE
-  FIXES: $FIXES_TEMPLATE
-  CHORES: $CHORES_TEMPLATE
-  DOCS: $DOCS_TEMPLATE
-  OTHER: $OTHER_TEMPLATE
+  COMMIT_MESSAGES: $COMMITS_TEMPLATE
 
 replacers:
-  - search: '\$FEATURES_TEMPLATE'
+  - search: '\$COMMITS_TEMPLATE'
     replace: >-
       ${{
-        const features = commits.filter(commit => 
-          commit.message.toLowerCase().startsWith('feat:') ||
-          commit.message.toLowerCase().startsWith('feature:')
-        ).map(commit => {
-          const message = commit.message.split('\n')[0].trim();
-          const shaShort = commit.sha.substring(0, 7);
-          return `- ${message} (${shaShort})`;
+        const commitMessages = commits.map(commit => {
+          return commit.message.trim();
         });
-        features.length > 0 ? '### 🚀 Features\n' + features.join('\n') + '\n' : ''
-      }}
-
-  - search: '\$FIXES_TEMPLATE'
-    replace: >-
-      ${{
-        const fixes = commits.filter(commit => 
-          commit.message.toLowerCase().startsWith('fix:') ||
-          commit.message.toLowerCase().startsWith('bug:') ||
-          commit.message.toLowerCase().includes('bugfix')
-        ).map(commit => {
-          const message = commit.message.split('\n')[0].trim();
-          const shaShort = commit.sha.substring(0, 7);
-          return `- ${message} (${shaShort})`;
-        });
-        fixes.length > 0 ? '### 🐛 Bug Fixes\n' + fixes.join('\n') + '\n' : ''
-      }}
-
-  - search: '\$CHORES_TEMPLATE'
-    replace: >-
-      ${{
-        const chores = commits.filter(commit => 
-          commit.message.toLowerCase().startsWith('chore:') ||
-          commit.message.toLowerCase().startsWith('refactor:') ||
-          commit.message.toLowerCase().startsWith('ci:') ||
-          commit.message.toLowerCase().startsWith('build:')
-        ).map(commit => {
-          const message = commit.message.split('\n')[0].trim();
-          const shaShort = commit.sha.substring(0, 7);
-          return `- ${message} (${shaShort})`;
-        });
-        chores.length > 0 ? '### 🔧 Chores\n' + chores.join('\n') + '\n' : ''
-      }}
-
-  - search: '\$DOCS_TEMPLATE'
-    replace: >-
-      ${{
-        const docs = commits.filter(commit => 
-          commit.message.toLowerCase().startsWith('docs:') ||
-          commit.message.toLowerCase().includes('readme') ||
-          commit.message.toLowerCase().includes('documentation')
-        ).map(commit => {
-          const message = commit.message.split('\n')[0].trim();
-          const shaShort = commit.sha.substring(0, 7);
-          return `- ${message} (${shaShort})`;
-        });
-        docs.length > 0 ? '### 📚 Documentation\n' + docs.join('\n') + '\n' : ''
-      }}
-
-  - search: '\$OTHER_TEMPLATE'
-    replace: >-
-      ${{
-        const other = commits.filter(commit => {
-          const msg = commit.message.toLowerCase();
-          return !msg.startsWith('feat:') &&
-                 !msg.startsWith('feature:') &&
-                 !msg.startsWith('fix:') &&
-                 !msg.startsWith('bug:') &&
-                 !msg.startsWith('chore:') &&
-                 !msg.startsWith('refactor:') &&
-                 !msg.startsWith('ci:') &&
-                 !msg.startsWith('build:') &&
-                 !msg.startsWith('docs:') &&
-                 !msg.includes('readme') &&
-                 !msg.includes('documentation');
-        }).map(commit => {
-          const message = commit.message.split('\n')[0].trim();
-          const shaShort = commit.sha.substring(0, 7);
-          return `- ${message} (${shaShort})`;
-        });
-        other.length > 0 ? '### 📋 Other Changes\n' + other.join('\n') : ''
+        commitMessages.join('\n\n')
       }}
