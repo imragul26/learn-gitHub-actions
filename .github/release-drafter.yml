@@ -1,146 +1,90 @@
 name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 
+# Template for the release notes
 template: |
   # v$RESOLVED_VERSION ($(date +'%Y-%m-%d'))
   
-  $COMMIT_MESSAGES
+  $CATEGORIZED_COMMITS
   
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
 
-categories:
-  - title: "🚨 Breaking Changes"
-    labels: ["breaking-change"]
-  - title: "✨ Features"
-    labels: ["feature"]
-  - title: "🐛 Bug Fixes"
-    labels: ["bug"]
-  - title: "🛠 Enhancements"
-    labels: ["enhancement"]
-  - title: "📦 Dependencies"
-    labels: ["dependencies"]
-    collapse-after: 2
-  - title: "📋 Other Changes"
-    labels: []
-
-change-template: ""
-
+# Custom template variables
 template-variables:
-  COMMIT_MESSAGES: $COMMITS_TEMPLATE
+  CATEGORIZED_COMMITS: $COMMITS_TEMPLATE
 
+# Replacers to categorize commits and add emojis
 replacers:
   - search: '\$COMMITS_TEMPLATE'
     replace: >-
       ${{
-        // Create commit groups based on the categories configuration
-        const commitGroups = {};
-        categories.forEach(category => {
-          // Create a key from the title by removing emojis and spaces
-          const key = category.title.replace(/[^\w\s]/g, '').replace(/\s+/g, '').toLowerCase();
-          commitGroups[key] = {
-            title: category.title,
-            labels: category.labels || [],
-            items: []
-          };
-        });
-
-        // Add a catch-all for commits that don't match any category
-        commitGroups.other = {
-          title: "📋 Other Changes",
-          items: []
+        const commitGroups = {
+          feat: [],
+          fix: [],
+          docs: [],
+          chore: [],
+          refactor: [],
+          perf: [],
+          test: [],
+          other: []
         };
 
         commits.forEach(commit => {
           const message = commit.message.trim();
-          const author = commit.author ? ` by @${commit.author.login}` : '';
-          const prNumber = commit.linkedPullNumbers && commit.linkedPullNumbers[0] 
-            ? ` in #${commit.linkedPullNumbers[0]}`
-            : '';
+          const shaShort = commit.sha.substring(0, 7);
+          const author = commit.author ? ` (@${commit.author.login})` : '';
+          const entry = `- ${message} [${shaShort}]${author}`;
           
-          const entry = `${message}${author}${prNumber}`;
-          
-          let assigned = false;
-          
-          // First check for breaking changes
-          const isBreaking = commit.body && commit.body.includes("BREAKING CHANGE");
-          if (isBreaking) {
-            commitGroups.breakingchanges.items.push(entry);
-            assigned = true;
-          }
-          
-          // Then check commit labels
-          if (!assigned && commit.labels && commit.labels.length > 0) {
-            for (const groupKey in commitGroups) {
-              const group = commitGroups[groupKey];
-              if (group.labels && group.labels.length > 0) {
-                const hasMatchingLabel = commit.labels.some(label => 
-                  group.labels.includes(label.name)
-                );
-                if (hasMatchingLabel) {
-                  group.items.push(entry);
-                  assigned = true;
-                  break;
-                }
-              }
-            }
-          }
-          
-          // If not assigned by labels, try to categorize by commit type
-          if (!assigned) {
-            const typeMatch = message.match(/^(\w+)(\([^)]+\))?:/i);
-            const type = typeMatch ? typeMatch[1].toLowerCase() : 'other';
-            
-            // Map commit types to category keys
-            const typeMapping = {
-              feat: 'features',
-              fix: 'bugfixes',
-              perf: 'other',
-              refactor: 'enhancements',
-              docs: 'other',
-              test: 'other',
-              build: 'other',
-              ci: 'other',
-              style: 'other',
-              chore: 'other',
-              revert: 'other'
-            };
-            
-            const categoryKey = typeMapping[type] || 'other';
-            if (commitGroups[categoryKey]) {
-              commitGroups[categoryKey].items.push(entry);
-            } else {
-              commitGroups.other.items.push(entry);
-            }
+          if (message.toLowerCase().startsWith('feat:') || message.toLowerCase().startsWith('feature:')) {
+            commitGroups.feat.push(entry);
+          } else if (message.toLowerCase().startsWith('fix:') || message.toLowerCase().startsWith('bug:')) {
+            commitGroups.fix.push(entry);
+          } else if (message.toLowerCase().startsWith('docs:') || message.toLowerCase().startsWith('documentation:')) {
+            commitGroups.docs.push(entry);
+          } else if (message.toLowerCase().startsWith('chore:')) {
+            commitGroups.chore.push(entry);
+          } else if (message.toLowerCase().startsWith('refactor:')) {
+            commitGroups.refactor.push(entry);
+          } else if (message.toLowerCase().startsWith('perf:') || message.toLowerCase().startsWith('performance:')) {
+            commitGroups.perf.push(entry);
+          } else if (message.toLowerCase().startsWith('test:')) {
+            commitGroups.test.push(entry);
+          } else {
+            commitGroups.other.push(entry);
           }
         });
 
         let output = '';
         
-        // Generate output based on the categories order from YAML
-        categories.forEach(category => {
-          const key = category.title.replace(/[^\w\s]/g, '').replace(/\s+/g, '').toLowerCase();
-          const group = commitGroups[key];
-          if (group && group.items.length > 0) {
-            output += `## ${group.title}\n\n`;
-            group.items.forEach(item => {
-              output += `- ${item}\n`;
-            });
-            output += '\n';
-          }
-        });
-        
-        // Add other changes if any
-        if (commitGroups.other.items.length > 0) {
-          output += `## ${commitGroups.other.title}\n\n`;
-          commitGroups.other.items.forEach(item => {
-            output += `- ${item}\n`;
-          });
-          output += '\n';
+        if (commitGroups.feat.length > 0) {
+          output += '### 🚀 Features\n' + commitGroups.feat.join('\n') + '\n\n';
+        }
+        if (commitGroups.fix.length > 0) {
+          output += '### 🐛 Bug Fixes\n' + commitGroups.fix.join('\n') + '\n\n';
+        }
+        if (commitGroups.perf.length > 0) {
+          output += '### ⚡ Performance Improvements\n' + commitGroups.perf.join('\n') + '\n\n';
+        }
+        if (commitGroups.refactor.length > 0) {
+          output += '### 🔧 Refactors\n' + commitGroups.refactor.join('\n') + '\n\n';
+        }
+        if (commitGroups.docs.length > 0) {
+          output += '### 📚 Documentation\n' + commitGroups.docs.join('\n') + '\n\n';
+        }
+        if (commitGroups.test.length > 0) {
+          output += '### ✅ Tests\n' + commitGroups.test.join('\n') + '\n\n';
+        }
+        if (commitGroups.chore.length > 0) {
+          output += '### 📦 Chores\n' + commitGroups.chore.join('\n') + '\n\n';
+        }
+        if (commitGroups.other.length > 0) {
+          output += '### 📋 Other Changes\n' + commitGroups.other.join('\n') + '\n\n';
         }
 
-        return output.trim();
+        return output.trim() || 'No significant changes.';
       }}
 
+# Configuration
 include-paths: []
 exclude-labels: ["skip-changelog"]
 sort-direction: ascending
