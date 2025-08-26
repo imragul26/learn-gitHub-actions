@@ -2,17 +2,11 @@ name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 
 template: |
-  # 🎉 v$RESOLVED_VERSION ($(date +'%Y-%m-%d'))
-  
-  ## 📋 Commit Details
+  # v$RESOLVED_VERSION ($(date +'%Y-%m-%d'))
   
   $COMMIT_MESSAGES
   
-  ---
-  
-  **📊 Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
-  
-  **✨ Generated with ❤️ by Release Drafter**
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
 
 categories: []
 
@@ -26,101 +20,49 @@ replacers:
     replace: >-
       ${{
         const commitGroups = {
-          feat: [],
-          fix: [],
-          docs: [],
-          chore: [],
-          refactor: [],
-          perf: [],
-          test: [],
-          style: [],
-          ci: [],
-          build: [],
-          other: []
+          feat: { title: "🚀 Features", items: [] },
+          fix: { title: "🐛 Bug Fixes", items: [] },
+          perf: { title: "⚡ Performance Improvements", items: [] },
+          refactor: { title: "♻️ Refactors", items: [] },
+          docs: { title: "📚 Documentation", items: [] },
+          test: { title: "✅ Tests", items: [] },
+          build: { title: "📦 Build System", items: [] },
+          ci: { title: "👷 Continuous Integration", items: [] },
+          style: { title: "💄 Styles", items: [] },
+          chore: { title: "🔧 Chores", items: [] },
+          revert: { title: "⏪ Reverts", items: [] },
+          other: { title: "📋 Other Changes", items: [] }
         };
 
         commits.forEach(commit => {
           const message = commit.message.trim();
           const shaShort = commit.sha.substring(0, 7);
-          const author = commit.author ? ` **@${commit.author.login}**` : '';
-          const prNumber = commit.pull_request ? ` [#${commit.pull_request.number}]` : '';
+          const author = commit.author ? ` (${commit.author.login})` : '';
+          const entry = `${message} [${shaShort}]${author}`;
           
-          let entry = `- ${message} \`${shaShort}\`${author}${prNumber}`;
+          const typeMatch = message.match(/^(\w+)(\([^)]+\))?:/i);
+          const type = typeMatch ? typeMatch[1].toLowerCase() : 'other';
           
-          // Remove conventional commit prefix for cleaner display
-          let cleanMessage = message;
-          const prefixMatch = message.match(/^(\w+):\s*/i);
-          if (prefixMatch) {
-            cleanMessage = message.substring(prefixMatch[0].length);
-            entry = `- ${cleanMessage} \`${shaShort}\`${author}${prNumber}`;
-          }
-
-          if (message.toLowerCase().startsWith('feat:') || message.toLowerCase().startsWith('feature:')) {
-            commitGroups.feat.push(entry);
-          } else if (message.toLowerCase().startsWith('fix:') || message.toLowerCase().startsWith('bug:')) {
-            commitGroups.fix.push(entry);
-          } else if (message.toLowerCase().startsWith('docs:') || message.toLowerCase().includes('documentation')) {
-            commitGroups.docs.push(entry);
-          } else if (message.toLowerCase().startsWith('chore:')) {
-            commitGroups.chore.push(entry);
-          } else if (message.toLowerCase().startsWith('refactor:')) {
-            commitGroups.refactor.push(entry);
-          } else if (message.toLowerCase().startsWith('perf:') || message.toLowerCase().includes('performance')) {
-            commitGroups.perf.push(entry);
-          } else if (message.toLowerCase().startsWith('test:')) {
-            commitGroups.test.push(entry);
-          } else if (message.toLowerCase().startsWith('style:')) {
-            commitGroups.style.push(entry);
-          } else if (message.toLowerCase().startsWith('ci:') || message.toLowerCase().includes('github actions')) {
-            commitGroups.ci.push(entry);
-          } else if (message.toLowerCase().startsWith('build:')) {
-            commitGroups.build.push(entry);
+          if (commitGroups[type]) {
+            commitGroups[type].items.push(entry);
           } else {
-            commitGroups.other.push(entry);
+            commitGroups.other.items.push(entry);
           }
         });
 
         let output = '';
+        const order = ['feat', 'fix', 'perf', 'refactor', 'docs', 'test', 'build', 'ci', 'style', 'chore', 'revert', 'other'];
         
-        if (commitGroups.feat.length > 0) {
-          output += '### 🚀 New Features\n' + commitGroups.feat.join('\n') + '\n\n';
-        }
-        if (commitGroups.fix.length > 0) {
-          output += '### 🐛 Bug Fixes\n' + commitGroups.fix.join('\n') + '\n\n';
-        }
-        if (commitGroups.perf.length > 0) {
-          output += '### ⚡ Performance Boost\n' + commitGroups.perf.join('\n') + '\n\n';
-        }
-        if (commitGroups.refactor.length > 0) {
-          output += '### 🔧 Code Refactoring\n' + commitGroups.refactor.join('\n') + '\n\n';
-        }
-        if (commitGroups.docs.length > 0) {
-          output += '### 📚 Documentation Updates\n' + commitGroups.docs.join('\n') + '\n\n';
-        }
-        if (commitGroups.test.length > 0) {
-          output += '### ✅ Tests & Quality\n' + commitGroups.test.join('\n') + '\n\n';
-        }
-        if (commitGroups.style.length > 0) {
-          output += '### 💅 Code Style Improvements\n' + commitGroups.style.join('\n') + '\n\n';
-        }
-        if (commitGroups.ci.length > 0) {
-          output += '### 🔄 CI/CD Updates\n' + commitGroups.ci.join('\n') + '\n\n';
-        }
-        if (commitGroups.build.length > 0) {
-          output += '### 📦 Build System\n' + commitGroups.build.join('\n') + '\n\n';
-        }
-        if (commitGroups.chore.length > 0) {
-          output += '### 🧹 Maintenance & Chores\n' + commitGroups.chore.join('\n') + '\n\n';
-        }
-        if (commitGroups.other.length > 0) {
-          output += '### 🌟 Other Changes\n' + commitGroups.other.join('\n') + '\n\n';
-        }
-
-        // Add summary if no commits found
-        if (output.trim() === '') {
-          output = '### 📝 No significant changes in this release\n';
-          output += 'This release contains minor updates and maintenance tasks.';
-        }
+        order.forEach(type => {
+          const group = commitGroups[type];
+          if (group.items.length > 0) {
+            output += `## ${group.title}\n\n`;
+            group.items.forEach(item => {
+              output += `- ${item}\n`;
+            });
+            output += '\n';
+          }
+        });
 
         return output.trim();
       }}
