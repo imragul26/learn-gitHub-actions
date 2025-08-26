@@ -4,6 +4,9 @@ tag-template: "v$RESOLVED_VERSION"
 template: |
   ## What's Changed
   $CHANGES
+  
+  ## Commit Details
+  $COMMIT_DETAILS
 
 categories:
   - title: "🚨 Breaking Changes"
@@ -19,13 +22,14 @@ categories:
     collapse-after: 2
   - title: "📋 Other Changes"
     labels: []
+    # fallback bucket when PRs don't match above categories
 
-# Change template to include commit messages
+# Extract commit messages for each PR
 change-template: |
-  - **$TITLE**$IS_MODULE – #$NUMBER
+  - $TITLE$IS_MODULE – #$NUMBER
     $COMMIT_MESSAGES
 
-# Custom template variables
+# Custom template variable for commit messages
 template-variables:
   IS_MODULE: $IS_MODULE_TEMPLATE
   COMMIT_MESSAGES: $COMMIT_MESSAGES_TEMPLATE
@@ -44,15 +48,60 @@ replacers:
   - search: '\$COMMIT_MESSAGES_TEMPLATE'
     replace: >-
       ${{
-        // Extract commit messages for this PR
-        const commitMessages = commits.map(commit => 
-          '  - ' + commit.message.split('\n')[0].trim()
-        );
-        commitMessages.length > 0 ? '\n' + commitMessages.join('\n') : ''
+        commits = [];
+        for (commit of commits) {
+          commits.push('    - ' + commit.message.split('\n')[0]);
+        }
+        commits.length > 0 ? '\n' + commits.join('\n') : ''
       }}
 
-# Basic configuration
+# Configure commit extraction
 include-paths: []
 exclude-labels: []
 sort-direction: ascending
 sort-by: merged_at
+
+# Additional configuration for commit details section
+sections:
+  - name: commit_details
+    title: "## Commit Details"
+    hidden: false
+    labels: []
+    body: |
+      ${{
+        const commitGroups = {};
+        commits.forEach(commit => {
+          const message = commit.message.split('\n')[0];
+          const prMatch = message.match(/\(#(\d+)\)$/);
+          if (prMatch) {
+            const prNumber = prMatch[1];
+            if (!commitGroups[prNumber]) {
+              commitGroups[prNumber] = [];
+            }
+            commitGroups[prNumber].push(message);
+          } else {
+            // Direct commits without PR reference
+            if (!commitGroups.direct) {
+              commitGroups.direct = [];
+            }
+            commitGroups.direct.push(message);
+          }
+        });
+        
+        let output = '';
+        Object.entries(commitGroups).forEach(([key, messages]) => {
+          if (key === 'direct') {
+            output += '### Direct Commits\n';
+            messages.forEach(msg => {
+              output += `- ${msg}\n`;
+            });
+          } else {
+            output += `### PR #${key}\n`;
+            messages.forEach(msg => {
+              output += `- ${msg}\n`;
+            });
+          }
+          output += '\n';
+        });
+        return output;
+      }}
