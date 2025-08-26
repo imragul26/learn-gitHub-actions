@@ -1,73 +1,423 @@
-name-template: "v$RESOLVED_VERSION"
-tag-template: "v$RESOLVED_VERSION"
-
-template: |
-  # v$RESOLVED_VERSION ($(date +'%Y-%m-%d'))
-  
-  $COMMIT_MESSAGES
-  
-  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
-
-categories: []
-
-change-template: ""
-
-template-variables:
-  COMMIT_MESSAGES: $COMMITS_TEMPLATE
-
-replacers:
-  - search: '\$COMMITS_TEMPLATE'
-    replace: >-
-      ${{
-        const commitGroups = {
-          feat: { title: "🚀 Features", items: [] },
-          fix: { title: "🐛 Bug Fixes", items: [] },
-          perf: { title: "⚡ Performance Improvements", items: [] },
-          refactor: { title: "♻️ Refactors", items: [] },
-          docs: { title: "📚 Documentation", items: [] },
-          test: { title: "✅ Tests", items: [] },
-          build: { title: "📦 Build System", items: [] },
-          ci: { title: "👷 Continuous Integration", items: [] },
-          style: { title: "💄 Styles", items: [] },
-          chore: { title: "🔧 Chores", items: [] },
-          revert: { title: "⏪ Reverts", items: [] },
-          other: { title: "📋 Other Changes", items: [] }
-        };
-
-        commits.forEach(commit => {
-          const message = commit.message.trim();
-          const shaShort = commit.sha.substring(0, 7);
-          const author = commit.author ? ` (${commit.author.login})` : '';
-          const entry = `${message} [${shaShort}]${author}`;
-          
-          const typeMatch = message.match(/^(\w+)(\([^)]+\))?:/i);
-          const type = typeMatch ? typeMatch[1].toLowerCase() : 'other';
-          
-          if (commitGroups[type]) {
-            commitGroups[type].items.push(entry);
-          } else {
-            commitGroups.other.items.push(entry);
-          }
-        });
-
-        let output = '';
-        const order = ['feat', 'fix', 'perf', 'refactor', 'docs', 'test', 'build', 'ci', 'style', 'chore', 'revert', 'other'];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorful Release Tag Generator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
         
-        order.forEach(type => {
-          const group = commitGroups[type];
-          if (group.items.length > 0) {
-            output += `## ${group.title}\n\n`;
-            group.items.forEach(item => {
-              output += `- ${item}\n`;
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #4b6cb7, #182848);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .input-section, .preview-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            border-color: #4b6cb7;
+            outline: none;
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        button {
+            background: linear-gradient(90deg, #4b6cb7, #182848);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .preview {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+            border: 2px dashed #ddd;
+        }
+        
+        .release-tag {
+            display: inline-block;
+            background: linear-gradient(90deg, #ff8a00, #e52e71);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .changelog {
+            margin-top: 20px;
+        }
+        
+        .changelog h3 {
+            color: #2c3e50;
+            margin: 15px 0 10px;
+        }
+        
+        .changelog ul {
+            list-style: none;
+            padding-left: 5px;
+        }
+        
+        .changelog li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+        
+        .changelog li:before {
+            content: "•";
+            color: #4b6cb7;
+            font-weight: bold;
+            display: inline-block;
+            width: 20px;
+            font-size: 20px;
+        }
+        
+        .emoji {
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+        
+        .category {
+            margin: 20px 0 10px;
+            padding: 8px 12px;
+            background: linear-gradient(90deg, #4b6cb7, #182848);
+            color: white;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .copy-btn {
+            background: linear-gradient(90deg, #00b09b, #96c93d);
+            margin-top: 15px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #00b09b;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease-out;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Colorful Release Tag Generator</h1>
+            <p class="subtitle">Create beautiful release notes with emojis and categorized changes</p>
+        </header>
+        
+        <div class="content">
+            <div class="input-section">
+                <h2>Release Information</h2>
+                
+                <div class="form-group">
+                    <label for="version">Version Number</label>
+                    <input type="text" id="version" placeholder="e.g., 1.2.0" value="1.2.0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="releaseDate">Release Date</label>
+                    <input type="date" id="releaseDate">
+                </div>
+                
+                <div class="form-group">
+                    <label for="repoUrl">Repository URL</label>
+                    <input type="text" id="repoUrl" placeholder="https://github.com/username/repo" value="https://github.com/yourusername/yourrepo">
+                </div>
+                
+                <div class="form-group">
+                    <label for="previousTag">Previous Tag</label>
+                    <input type="text" id="previousTag" placeholder="e.g., v1.1.0" value="v1.1.0">
+                </div>
+                
+                <h2>Commit Messages</h2>
+                <p>Enter one commit per line in the format: <code>type: message</code></p>
+                
+                <div class="form-group">
+                    <label for="commits">Commits</label>
+                    <textarea id="commits">feat: add user authentication
+fix: resolve login page crash
+docs: update API documentation
+feat: implement dark mode
+perf: optimize database queries
+refactor: clean up user service
+test: add unit tests for utils
+fix: correct button alignment
+chore: update dependencies</textarea>
+                </div>
+                
+                <button id="generateBtn">Generate Release Notes</button>
+                <button id="copyBtn" class="copy-btn">Copy to Clipboard</button>
+            </div>
+            
+            <div class="preview-section">
+                <h2>Release Preview</h2>
+                <div class="preview" id="preview">
+                    <p>Your generated release notes will appear here...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">Copied to clipboard!</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('releaseDate').value = today;
+            
+            // Generate initial preview
+            generateReleaseNotes();
+            
+            // Event listeners
+            document.getElementById('generateBtn').addEventListener('click', generateReleaseNotes);
+            document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
+            
+            // Add input event listeners to update preview in real-time
+            const inputs = ['version', 'releaseDate', 'repoUrl', 'previousTag', 'commits'];
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', generateReleaseNotes);
             });
-            output += '\n';
-          }
         });
-
-        return output.trim();
-      }}
-
-include-paths: []
-exclude-labels: ["skip-changelog"]
-sort-direction: ascending
-sort-by: committed_date
+        
+        function generateReleaseNotes() {
+            const version = document.getElementById('version').value;
+            const releaseDate = document.getElementById('releaseDate').value;
+            const repoUrl = document.getElementById('repoUrl').value;
+            const previousTag = document.getElementById('previousTag').value;
+            const commitsText = document.getElementById('commits').value;
+            
+            // Extract owner and repository from URL
+            let owner = 'yourusername';
+            let repo = 'yourrepo';
+            try {
+                const urlParts = repoUrl.split('/');
+                owner = urlParts[urlParts.length - 2];
+                repo = urlParts[urlParts.length - 1];
+            } catch (e) {
+                console.error('Error parsing repository URL', e);
+            }
+            
+            // Parse commits
+            const commits = commitsText.split('\n')
+                .filter(line => line.trim())
+                .map(line => {
+                    const [typeMessage, ...rest] = line.split(':');
+                    return {
+                        type: typeMessage.trim(),
+                        message: rest.join(':').trim()
+                    };
+                });
+            
+            // Categorize commits
+            const categories = {
+                feat: { title: '🚀 Features', items: [] },
+                fix: { title: '🐛 Bug Fixes', items: [] },
+                perf: { title: '⚡ Performance Improvements', items: [] },
+                refactor: { title: '♻️ Refactors', items: [] },
+                docs: { title: '📚 Documentation', items: [] },
+                test: { title: '✅ Tests', items: [] },
+                build: { title: '📦 Build System', items: [] },
+                ci: { title: '👷 Continuous Integration', items: [] },
+                style: { title: '💄 Styles', items: [] },
+                chore: { title: '🔧 Chores', items: [] },
+                revert: { title: '⏪ Reverts', items: [] }
+            };
+            
+            commits.forEach(commit => {
+                const type = commit.type.toLowerCase();
+                if (categories[type]) {
+                    categories[type].items.push(commit.message);
+                } else {
+                    if (!categories.other) {
+                        categories.other = { title: '📋 Other Changes', items: [] };
+                    }
+                    categories.other.items.push(`${commit.type}: ${commit.message}`);
+                }
+            });
+            
+            // Format date
+            const formattedDate = new Date(releaseDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
+            // Generate HTML
+            let html = `
+                <div class="release-tag">v${version}</div>
+                <h2>v${version} (${formattedDate})</h2>
+            `;
+            
+            // Add categorized changes
+            for (const [key, category] of Object.entries(categories)) {
+                if (category.items.length > 0) {
+                    html += `<div class="category">${category.title}</div>`;
+                    html += '<ul>';
+                    category.items.forEach(item => {
+                        html += `<li><span class="emoji">${getEmojiForCommit(item)}</span> ${item}</li>`;
+                    });
+                    html += '</ul>';
+                }
+            }
+            
+            // Add compare link
+            html += `
+                <div class="changelog">
+                    <h3>Full Changelog</h3>
+                    <p><a href="${repoUrl}/compare/${previousTag}...v${version}" target="_blank">${repoUrl}/compare/${previousTag}...v${version}</a></p>
+                </div>
+            `;
+            
+            document.getElementById('preview').innerHTML = html;
+        }
+        
+        function getEmojiForCommit(message) {
+            if (message.toLowerCase().includes('add') || message.toLowerCase().includes('new')) {
+                return '✨';
+            } else if (message.toLowerCase().includes('fix') || message.toLowerCase().includes('resolve')) {
+                return '🐛';
+            } else if (message.toLowerCase().includes('update') || message.toLowerCase().includes('upgrade')) {
+                return '⬆️';
+            } else if (message.toLowerCase().includes('remove') || message.toLowerCase().includes('delete')) {
+                return '🗑️';
+            } else if (message.toLowerCase().includes('improve') || message.toLowerCase().includes('optimize')) {
+                return '⚡';
+            } else if (message.toLowerCase().includes('documentation') || message.toLowerCase().includes('docs')) {
+                return '📚';
+            } else if (message.toLowerCase().includes('test')) {
+                return '✅';
+            } else if (message.toLowerCase().includes('refactor')) {
+                return '♻️';
+            }
+            return '🔹';
+        }
+        
+        function copyToClipboard() {
+            const preview = document.getElementById('preview');
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = preview.innerText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+            
+            // Show notification
+            const notification = document.getElementById('notification');
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
