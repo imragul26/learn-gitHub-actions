@@ -1,5 +1,5 @@
 name: 📦 Create Draft Release (Manual)
- 
+
 on:
   workflow_dispatch:
     inputs:
@@ -16,10 +16,15 @@ jobs:
     name: 🛠 Run Release Drafter
     runs-on: ubuntu-latest
     steps:
+      - name: 🚚 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all tags and branches
+
       - name: 🧰 Run release-drafter
         uses: release-drafter/release-drafter@v6
         with:
           version: ${{ github.event.inputs.version }}
+          config-name: release-drafter.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
- 
