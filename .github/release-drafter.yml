@@ -2,9 +2,9 @@ name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 
 template: |
-  ## Changes
+  ## What's Changed
   $CHANGES
- 
+
 categories:
   - title: "🚨 Breaking Changes"
     labels: ["breaking-change"]
@@ -19,21 +19,18 @@ categories:
     collapse-after: 2
   - title: "📋 Other Changes"
     labels: []
-    # fallback bucket when PRs don't match above categories
- 
-label-extractors:
-  module:
-    labels:
-      - origination
-      - maintenance
-      - testation
 
+# Change template to include commit messages
 change-template: |
-  - $TITLE$IS_MODULE – #$NUMBER
+  - **$TITLE**$IS_MODULE – #$NUMBER
+    $COMMIT_MESSAGES
 
+# Custom template variables
 template-variables:
   IS_MODULE: $IS_MODULE_TEMPLATE
+  COMMIT_MESSAGES: $COMMIT_MESSAGES_TEMPLATE
 
+# Replacers for module labels and commit messages
 replacers:
   - search: '\$IS_MODULE_TEMPLATE'
     replace: >-
@@ -43,3 +40,19 @@ replacers:
         contains(labels, 'testation') && ' (`testation`)' ||
         ''
       }}
+  
+  - search: '\$COMMIT_MESSAGES_TEMPLATE'
+    replace: >-
+      ${{
+        // Extract commit messages for this PR
+        const commitMessages = commits.map(commit => 
+          '  - ' + commit.message.split('\n')[0].trim()
+        );
+        commitMessages.length > 0 ? '\n' + commitMessages.join('\n') : ''
+      }}
+
+# Basic configuration
+include-paths: []
+exclude-labels: []
+sort-direction: ascending
+sort-by: merged_at
