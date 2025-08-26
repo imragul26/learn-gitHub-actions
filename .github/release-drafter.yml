@@ -3,105 +3,103 @@ tag-template: "v$RESOLVED_VERSION"
 
 template: |
   ## What's Changed
-  $CHANGES
   
-  ## Commit Details
-  $COMMIT_DETAILS
+  $FEATURES
+  $FIXES
+  $CHORES
+  $DOCS
+  $OTHER
 
-categories:
-  - title: "🚨 Breaking Changes"
-    labels: ["breaking-change"]
-  - title: "✨ Features"
-    labels: ["feature"]
-  - title: "🐛 Bug Fixes"
-    labels: ["bug"]
-  - title: "🛠 Enhancements"
-    labels: ["enhancement"]
-  - title: "📦 Dependencies"
-    labels: ["dependencies"]
-    collapse-after: 2
-  - title: "📋 Other Changes"
-    labels: []
-    # fallback bucket when PRs don't match above categories
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
 
-# Extract commit messages for each PR
-change-template: |
-  - $TITLE$IS_MODULE – #$NUMBER
-    $COMMIT_MESSAGES
-
-# Custom template variable for commit messages
 template-variables:
-  IS_MODULE: $IS_MODULE_TEMPLATE
-  COMMIT_MESSAGES: $COMMIT_MESSAGES_TEMPLATE
+  FEATURES: $FEATURES_TEMPLATE
+  FIXES: $FIXES_TEMPLATE
+  CHORES: $CHORES_TEMPLATE
+  DOCS: $DOCS_TEMPLATE
+  OTHER: $OTHER_TEMPLATE
 
-# Replacers for module labels and commit messages
 replacers:
-  - search: '\$IS_MODULE_TEMPLATE'
+  - search: '\$FEATURES_TEMPLATE'
     replace: >-
       ${{
-        contains(labels, 'origination') && ' (`origination`)' ||
-        contains(labels, 'maintenance') && ' (`maintenance`)' ||
-        contains(labels, 'testation') && ' (`testation`)' ||
-        ''
+        const features = commits.filter(commit => 
+          commit.message.toLowerCase().startsWith('feat:') ||
+          commit.message.toLowerCase().startsWith('feature:')
+        ).map(commit => {
+          const message = commit.message.split('\n')[0].trim();
+          const shaShort = commit.sha.substring(0, 7);
+          return `- ${message} (${shaShort})`;
+        });
+        features.length > 0 ? '### 🚀 Features\n' + features.join('\n') + '\n' : ''
       }}
-  
-  - search: '\$COMMIT_MESSAGES_TEMPLATE'
+
+  - search: '\$FIXES_TEMPLATE'
     replace: >-
       ${{
-        commits = [];
-        for (commit of commits) {
-          commits.push('    - ' + commit.message.split('\n')[0]);
-        }
-        commits.length > 0 ? '\n' + commits.join('\n') : ''
+        const fixes = commits.filter(commit => 
+          commit.message.toLowerCase().startsWith('fix:') ||
+          commit.message.toLowerCase().startsWith('bug:') ||
+          commit.message.toLowerCase().includes('bugfix')
+        ).map(commit => {
+          const message = commit.message.split('\n')[0].trim();
+          const shaShort = commit.sha.substring(0, 7);
+          return `- ${message} (${shaShort})`;
+        });
+        fixes.length > 0 ? '### 🐛 Bug Fixes\n' + fixes.join('\n') + '\n' : ''
       }}
 
-# Configure commit extraction
-include-paths: []
-exclude-labels: []
-sort-direction: ascending
-sort-by: merged_at
-
-# Additional configuration for commit details section
-sections:
-  - name: commit_details
-    title: "## Commit Details"
-    hidden: false
-    labels: []
-    body: |
+  - search: '\$CHORES_TEMPLATE'
+    replace: >-
       ${{
-        const commitGroups = {};
-        commits.forEach(commit => {
-          const message = commit.message.split('\n')[0];
-          const prMatch = message.match(/\(#(\d+)\)$/);
-          if (prMatch) {
-            const prNumber = prMatch[1];
-            if (!commitGroups[prNumber]) {
-              commitGroups[prNumber] = [];
-            }
-            commitGroups[prNumber].push(message);
-          } else {
-            // Direct commits without PR reference
-            if (!commitGroups.direct) {
-              commitGroups.direct = [];
-            }
-            commitGroups.direct.push(message);
-          }
+        const chores = commits.filter(commit => 
+          commit.message.toLowerCase().startsWith('chore:') ||
+          commit.message.toLowerCase().startsWith('refactor:') ||
+          commit.message.toLowerCase().startsWith('ci:') ||
+          commit.message.toLowerCase().startsWith('build:')
+        ).map(commit => {
+          const message = commit.message.split('\n')[0].trim();
+          const shaShort = commit.sha.substring(0, 7);
+          return `- ${message} (${shaShort})`;
         });
-        
-        let output = '';
-        Object.entries(commitGroups).forEach(([key, messages]) => {
-          if (key === 'direct') {
-            output += '### Direct Commits\n';
-            messages.forEach(msg => {
-              output += `- ${msg}\n`;
-            });
-          } else {
-            output += `### PR #${key}\n`;
-            messages.forEach(msg => {
-              output += `- ${msg}\n`;
-            });
-          }
-          output += '\n';
+        chores.length > 0 ? '### 🔧 Chores\n' + chores.join('\n') + '\n' : ''
+      }}
+
+  - search: '\$DOCS_TEMPLATE'
+    replace: >-
+      ${{
+        const docs = commits.filter(commit => 
+          commit.message.toLowerCase().startsWith('docs:') ||
+          commit.message.toLowerCase().includes('readme') ||
+          commit.message.toLowerCase().includes('documentation')
+        ).map(commit => {
+          const message = commit.message.split('\n')[0].trim();
+          const shaShort = commit.sha.substring(0, 7);
+          return `- ${message} (${shaShort})`;
         });
-        return output;
+        docs.length > 0 ? '### 📚 Documentation\n' + docs.join('\n') + '\n' : ''
+      }}
+
+  - search: '\$OTHER_TEMPLATE'
+    replace: >-
+      ${{
+        const other = commits.filter(commit => {
+          const msg = commit.message.toLowerCase();
+          return !msg.startsWith('feat:') &&
+                 !msg.startsWith('feature:') &&
+                 !msg.startsWith('fix:') &&
+                 !msg.startsWith('bug:') &&
+                 !msg.startsWith('chore:') &&
+                 !msg.startsWith('refactor:') &&
+                 !msg.startsWith('ci:') &&
+                 !msg.startsWith('build:') &&
+                 !msg.startsWith('docs:') &&
+                 !msg.includes('readme') &&
+                 !msg.includes('documentation');
+        }).map(commit => {
+          const message = commit.message.split('\n')[0].trim();
+          const shaShort = commit.sha.substring(0, 7);
+          return `- ${message} (${shaShort})`;
+        });
+        other.length > 0 ? '### 📋 Other Changes\n' + other.join('\n') : ''
       }}
