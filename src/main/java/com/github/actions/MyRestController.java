@@ -15,7 +15,7 @@ public class MyRestController {
 	@GetMapping(value = "/")
 	public String name() {
 
-		return "   Product Added succesfully     ";
+		return "   Product Added succesfully check1    ";
 
 	}
 
