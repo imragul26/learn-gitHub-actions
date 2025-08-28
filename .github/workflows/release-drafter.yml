@@ -1,9 +1,7 @@
 name: Generate Release Notes from Commits
-
 on:
   push:
-    tags:
-      - 'v*'  # Runs when you push tags like v1.0.0, v1.1.0, etc.
+    branches: [main, master]
 
 jobs:
   generate-release-notes:
@@ -14,7 +12,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Get all commit history
+          fetch-depth: 0
 
       - name: Generate categorized release notes
         run: |
