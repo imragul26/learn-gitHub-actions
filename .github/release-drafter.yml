@@ -4,123 +4,74 @@ tag-template: "v$RESOLVED_VERSION"
 categories:
   - title: "🚨 Breaking Changes"
     labels: ["breaking-change"]
-    collapse: false
     
-  - title: "✨ New Features" 
+  - title: "✨ New Features"
     labels: ["feature"]
-    collapse: false
     
-  - title: "🐛 Bug Fixes"
+  - title: "🐛 Bug Fixes" 
     labels: ["bug"]
-    collapse: false
     
   - title: "📚 Documentation"
     labels: ["documentation"]
-    collapse: false
     
-  - title: "🎨 Code Style"
-    labels: ["style"]
-    collapse: false
-    
-  - title: "♻️ Refactoring"
-    labels: ["refactor"]
-    collapse: false
-    
-  - title: "⚡ Performance"
-    labels: ["performance"] 
-    collapse: false
-    
-  - title: "✅ Tests"
-    labels: ["test"]
-    collapse: false
+  - title: "🔧 Chores & Maintenance"
+    labels: ["chore"]
     
   - title: "📦 Dependencies"
     labels: ["dependencies"]
-    collapse: false
     
-  - title: "🔧 Chores"
-    labels: ["chore"]
-    collapse: false
+  - title: "📋 Other Changes"
+    labels: []
 
+# CRITICAL: This forces commit parsing instead of PR parsing
 template: |
   ## What's Changed
-
   $CHANGES
 
-  ## Contributors
+# Use this simple template for each change
+change-template: |
+  - $TITLE by @$AUTHOR
 
-  $CONTRIBUTORS
-
-change-template: |- 
-  - $EMOJI **$TITLE**$SCOPE by @$AUTHOR in #$NUMBER
-
-change-title-escapes: '\<*_&' # You can add other characters if needed
-
+# This groups commits by category with emoji headers
 category-template: |
   ### $TITLE
   $COMMITS
 
+# Proper commit parsing configuration
+commit-parser:
+  pattern: "^(\w+)(?:\(([\w\-\.]+)\))?!?:\s*(.+)$"
+  map:
+    feat: "✨ New Features"
+    fix: "🐛 Bug Fixes" 
+    docs: "📚 Documentation"
+    chore: "🔧 Chores & Maintenance"
+    deps: "📦 Dependencies"
+
+# Add emojis based on commit type
+replacers:
+  - search: '^- '
+    replace: |-
+      ${{
+        (commit.match(/^feat:/) || commit.match(/^feature:/)) && '- ✨ ' ||
+        (commit.match(/^fix:/) || commit.match(/^bug:/)) && '- 🐛 ' ||
+        (commit.match(/^docs:/) || commit.match(/^documentation:/)) && '- 📚 ' ||
+        (commit.match(/^chore:/) || commit.match(/^maintenance:/)) && '- 🔧 ' ||
+        (commit.match(/^deps:/) || commit.match(/^dependencies:/)) && '- 📦 ' ||
+        '- 📋 '
+      }}
+
 exclude:
-  labels:
-    - "skip-changelog"
   commits:
     - "^Merge"
     - "^Revert"
     - "^chore\(release\):"
     - "^docs\(changelog\):"
 
-# --- EMOJI MAPPING --- #
-replacers:
-  # Map commit types to emojis
-  - search: '\\$EMOJI'
-    replace: |
-      ${{ 
-        contains(github.event.commits[0].message, 'feat:') && '✨' ||
-        contains(github.event.commits[0].message, 'fix:') && '🐛' ||
-        contains(github.event.commits[0].message, 'docs:') && '📚' ||
-        contains(github.event.commits[0].message, 'style:') && '🎨' ||
-        contains(github.event.commits[0].message, 'refactor:') && '♻️' ||
-        contains(github.event.commits[0].message, 'perf:') && '⚡' ||
-        contains(github.event.commits[0].message, 'test:') && '✅' ||
-        contains(github.event.commits[0].message, 'chore:') && '🔧' ||
-        contains(github.event.commits[0].message, 'build:') && '📦' ||
-        contains(github.event.commits[0].message, 'ci:') && '🌐' ||
-        '📋' 
-      }}
-
-  # Add scope if present
-  - search: '\\$SCOPE'
-    replace: |
-      ${{ 
-        github.event.commits[0].message.match(/\(([^)]+)\):/) ? ` **(${github.event.commits[0].message.match(/\(([^)]+)\):/)[1]})**` : '' 
-      }}
-
-# --- COMMIT PARSING --- #
-commit-parser:
-  pattern: "^(?<type>\\w+)(?:\\((?<scope>[\\w\\-\.]+)\\))?!?:\\s?(?<description>.+)$"
-  map:
-    feat: "✨ New Features"
-    fix: "🐛 Bug Fixes"
-    docs: "📚 Documentation" 
-    style: "🎨 Code Style"
-    refactor: "♻️ Refactoring"
-    perf: "⚡ Performance"
-    test: "✅ Tests"
-    chore: "🔧 Chores"
-    build: "📦 Dependencies"
-    ci: "🌐 CI/CD"
-    break: "🚨 Breaking Changes"
-    breaking: "🚨 Breaking Changes"
-
-# --- SORTING --- #
-sort:
-  by: "date"
-  order: "desc"
-
-# --- INCLUDED DATA --- #
 include:
   commit-hash: false
   commit-author: true
   commit-date: false
-  pull-request-number: true
-  pull-request-title: false
+
+sort:
+  by: "date"
+  order: "desc"
