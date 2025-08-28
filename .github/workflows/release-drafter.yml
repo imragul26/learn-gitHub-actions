@@ -1,138 +1,127 @@
- name: Generate Commit-based Release Notes
-  id: generate_notes
-  run: |
-    # Get current tag
-    CURRENT_TAG="${{ github.ref_name }}"
-    
-    # Get previous tag
-    PREVIOUS_TAG=$(git describe --tags --abbrev=0 "$CURRENT_TAG"^ 2>/dev/null || git rev-list --max-parents=0 HEAD 2>/dev/null || echo "")
-    
-    # Get commits between tags
-    if [ -z "$PREVIOUS_TAG" ]; then
-      COMMITS=$(git log --pretty=format:"%s|%an|%h" --reverse)
-    else
-      COMMITS=$(git log --pretty=format:"%s|%an|%h" "$PREVIOUS_TAG".."$CURRENT_TAG" --reverse)
-    fi
+name: Generate Release Draft
+on:
+  pull_request:
+    types: [closed]
+    branches: [main, master]
 
-    # Start building the release notes
-    echo "# $CURRENT_TAG 🚀 Draft" > release_notes.md
-    echo "" >> release_notes.md
-    echo "## What's Changed 🌟" >> release_notes.md
-    echo "" >> release_notes.md
+jobs:
+  generate-release-draft:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
     
-    # Initialize arrays for each category
-    declare -a features
-    declare -a bugfixes
-    declare -a documentation
-    declare -a chores
-    declare -a dependencies
-    declare -a other
-    
-    # Process each commit
-    while IFS= read -r commit_line; do
-      IFS='|' read -r message author hash <<< "$commit_line"
-      
-      # Extract PR number and author from message if present
-      pr_number=""
-      author_username="$author"
-      
-      # Extract PR number from message (common GitHub patterns)
-      if [[ $message =~ \(#([0-9]+)\) ]]; then
-        pr_number="${BASH_REMATCH[1]}"
-      fi
-      
-      # Extract author from message if mentioned
-      if [[ $message =~ by @([^ ]+) ]]; then
-        author_username="${BASH_REMATCH[1]}"
-      fi
-      
-      # Clean the message
-      clean_message=$(echo "$message" | sed -E 's/\(#[0-9]+\)//g' | sed -E 's/ by @[^ ]+//g' | sed -E 's/^[a-zA-Z]+:[[:space:]]*//' | xargs)
-      
-      # Format the entry
-      entry=""
-      if [ -n "$pr_number" ]; then
-        entry="- **$clean_message** by @$author_username [#$pr_number](https://github.com/${{ github.repository }}/pull/$pr_number)"
-      else
-        entry="- **$clean_message** by @$author_username"
-      fi
-      
-      # Categorize based on commit message
-      lowercase_message=$(echo "$message" | tr '[:upper:]' '[:lower:]')
-      
-      if [[ $lowercase_message =~ ^(feat:|feature:|add:|new:) ]] || [[ $lowercase_message =~ feat\( ]]; then
-        features+=("✨ $entry")
-      elif [[ $lowercase_message =~ ^(fix:|bug:|patch:) ]] || [[ $lowercase_message =~ fix\( ]]; then
-        bugfixes+=("🐛 $entry")
-      elif [[ $lowercase_message =~ ^(docs:|documentation:) ]] || [[ $lowercase_message =~ docs\( ]]; then
-        documentation+=("📚 $entry")
-      elif [[ $lowercase_message =~ ^(chore:|build:|ci:|cd:|refactor:|style:|perf:|test:) ]]; then
-        chores+=("🔧 $entry")
-      elif [[ $lowercase_message =~ ^(deps:|dependencies:) ]]; then
-        dependencies+=("📦 $entry")
-      elif [[ ! $lowercase_message =~ ^(merge|revert) ]] && [[ ! $lowercase_message =~ ^Merge ]] && [[ ! $lowercase_message =~ ^Revert ]]; then
-        other+=("📋 $entry")
-      fi
-      
-    done <<< "$COMMITS"
-    
-    # Output categorized sections
-    if [ ${#features[@]} -gt 0 ]; then
-      echo "### ✨ Features" >> release_notes.md
-      echo "" >> release_notes.md
-      printf '%s\n' "${features[@]}" >> release_notes.md
-      echo "" >> release_notes.md
-    fi
-    
-    if [ ${#bugfixes[@]} -gt 0 ]; then
-      echo "### 🐛 Bug Fixes" >> release_notes.md
-      echo "" >> release_notes.md
-      printf '%s\n' "${bugfixes[@]}" >> release_notes.md
-      echo "" >> release_notes.md
-    fi
-    
-    if [ ${#documentation[@]} -gt 0 ]; then
-      echo "### 📚 Documentation" >> release_notes.md
-      echo "" >> release_notes.md
-      printf '%s\n' "${documentation[@]}" >> release_notes.md
-      echo "" >> release_notes.md
-    fi
-    
-    if [ ${#chores[@]} -gt 0 ]; then
-      echo "### 🔧 Chores & Maintenance" >> release_notes.md
-      echo "" >> release_notes.md
-      printf '%s\n' "${chores[@]}" >> release_notes.md
-      echo "" >> release_notes.md
-    fi
-    
-    if [ ${#dependencies[@]} -gt 0 ]; then
-      echo "### 📦 Dependencies" >> release_notes.md
-      echo "" >> release_notes.md
-      printf '%s\n' "${dependencies[@]}" >> release_notes.md
-      echo "" >> release_notes.md
-    fi
-    
-    if [ ${#other[@]} -gt 0 ]; then
-      echo "### 📋 Other Changes" >> release_notes.md
-      echo "" >> release_notes.md
-      printf '%s\n' "${other[@]}" >> release_notes.md
-      echo "" >> release_notes.md
-    fi
-    
-    # Add statistics
-    total_commits=$(echo "$COMMITS" | wc -l)
-    echo "## 📊 Release Statistics" >> release_notes.md
-    echo "" >> release_notes.md
-    echo "- **Total commits**: $total_commits" >> release_notes.md
-    echo "- **Contributors**: $(echo "$COMMITS" | cut -d'|' -f2 | sort -u | wc -l)" >> release_notes.md
-    echo "" >> release_notes.md
-    
-    # Add footer
-    echo "---" >> release_notes.md
-    echo "*Generated automatically from commit messages* 🚀" >> release_notes.md
-    
-    # Set output
-    RELEASE_BODY=$(cat release_notes.md)
-    echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
-    echo "$RELEASE_BODY" >> $GITHUB_ENV
-    echo "EOF" >> $GITHUB_ENV
+    steps:
+    - name: Generate Release Notes
+      id: generate_notes
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const CATEGORIES = {
+            feat: { emoji: '✨', title: 'Features' },
+            fix: { emoji: '🐛', title: 'Bug Fixes' },
+            docs: { emoji: '📚', title: 'Documentation' },
+            style: { emoji: '🎨', title: 'Styling' },
+            refactor: { emoji: '♻️', title: 'Refactoring' },
+            perf: { emoji: '⚡', title: 'Performance' },
+            test: { emoji: '🧪', title: 'Tests' },
+            chore: { emoji: '🔧', title: 'Chores' },
+            ci: { emoji: '👷', title: 'CI/CD' },
+            build: { emoji: '📦', title: 'Build' },
+            revert: { emoji: '⏪', title: 'Reverts' }
+          };
+
+          const COMMIT_PATTERN = /^(\w+)(\([^)]+\))?!?:\s*(.+)$/i;
+
+          function categorizeMessage(message) {
+            const match = message.match(COMMIT_PATTERN);
+            if (match) {
+              const category = match[1].toLowerCase();
+              const description = match[3].trim();
+              if (CATEGORIES[category]) {
+                return { category, description };
+              }
+            }
+            
+            const messageLower = message.toLowerCase();
+            for (const category of Object.keys(CATEGORIES)) {
+              if (messageLower.includes(category)) {
+                return { category, description: message };
+              }
+            }
+            
+            return { category: 'other', description: message };
+          }
+
+          // Get PR data
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.payload.pull_request.number
+          });
+
+          // Get PR commits
+          const { data: commits } = await github.rest.pulls.listCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.payload.pull_request.number
+          });
+
+          // Process messages
+          const categorizedNotes = Object.keys(CATEGORIES).reduce((acc, cat) => {
+            acc[cat] = [];
+            return acc;
+          }, {});
+          categorizedNotes.other = [];
+
+          // Process PR title
+          const prTitleResult = categorizeMessage(pr.title);
+          if (prTitleResult.description) {
+            categorizedNotes[prTitleResult.category].push(
+              `- ${prTitleResult.description} (#${pr.number})`
+            );
+          }
+
+          // Process commits
+          commits.forEach(commit => {
+            const message = commit.commit.message;
+            if (message.startsWith('Merge')) return;
+            
+            const { category, description } = categorizeMessage(message);
+            if (description) {
+              categorizedNotes[category].push(`- ${description} (#${pr.number})`);
+            }
+          });
+
+          // Build release notes
+          let releaseNotes = '';
+          for (const [category, config] of Object.entries(CATEGORIES)) {
+            const notes = categorizedNotes[category];
+            if (notes.length > 0) {
+              releaseNotes += `### ${config.emoji} ${config.title}\n${notes.join('\n')}\n\n`;
+            }
+          }
+
+          if (categorizedNotes.other.length > 0) {
+            releaseNotes += `### 📝 Other Changes\n${categorizedNotes.other.join('\n')}\n\n`;
+          }
+
+          if (releaseNotes) {
+            releaseNotes += `**Author**: @${pr.user.login}\n`;
+            releaseNotes += `**PR**: #${pr.number}\n`;
+          }
+
+          core.setOutput('release_notes', releaseNotes.trim());
+          core.setOutput('release_version', 'v1.0.0'); // Simple version
+
+    - name: Create Release Draft
+      uses: softprops/action-gh-release@v1
+      if: steps.generate_notes.outputs.release_notes != ''
+      with:
+        tag_name: ${{ steps.generate_notes.outputs.release_version }}
+        name: Release ${{ steps.generate_notes.outputs.release_version }}
+        body: ${{ steps.generate_notes.outputs.release_notes }}
+        draft: true
+        prerelease: false
