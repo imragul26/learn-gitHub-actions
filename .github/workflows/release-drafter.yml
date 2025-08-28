@@ -16,82 +16,74 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get previous tag
-        id: previous_tag
-        run: |
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${{ github.sha }}^ 2>/dev/null || echo "")
-          echo "previous_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
-
-      - name: Get commit messages since last tag
+      - name: Get commit messages
         id: get_commits
         run: |
-          if [ -z "${{ steps.previous_tag.outputs.previous_tag }}" ]; then
-            # First release, get all commits
-            COMMITS=$(git log --oneline --format="%s|||%an")
-          else
-            # Get commits since last tag
-            COMMITS=$(git log ${{ steps.previous_tag.outputs.previous_tag }}..HEAD --oneline --format="%s|||%an")
-          fi
-          echo "commits<<EOF" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Get all commits in this tag
+          git log --oneline --format="%s|||%an" > commits.txt
+          echo "commits=$(cat commits.txt | base64 -w 0)" >> $GITHUB_OUTPUT
+          cat commits.txt
 
-      - name: Generate release notes
-        id: generate_notes
+      - name: Generate categorized release notes
         run: |
-          echo "# Release Notes 🚀" > release_notes.md
+          # Decode commits
+          echo "${{ steps.get_commits.outputs.commits }}" | base64 -d > commits.txt
+          
+          # Create release notes file
+          echo "# 🚀 Release Notes" > release_notes.md
           echo "" >> release_notes.md
           
           # Features
           echo "## ✨ Features" >> release_notes.md
-          echo "${{ steps.get_commits.outputs.commits }}" | grep -i "feat:" | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/^feat:\s*//i' | sed 's/^feature:\s*//i')
+          grep -i "feat:" commits.txt | while read -r line; do
+            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/feat: //i' | sed 's/feature: //i')
             author=$(echo "$line" | cut -d'|||' -f2)
             echo "- ✨ $message by @$author" >> release_notes.md
           done
           echo "" >> release_notes.md
-
+          
           # Bug Fixes
           echo "## 🐛 Bug Fixes" >> release_notes.md
-          echo "${{ steps.get_commits.outputs.commits }}" | grep -i "fix:" | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/^fix:\s*//i' | sed 's/^bug:\s*//i')
+          grep -i "fix:" commits.txt | while read -r line; do
+            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/fix: //i' | sed 's/bug: //i')
             author=$(echo "$line" | cut -d'|||' -f2)
             echo "- 🐛 $message by @$author" >> release_notes.md
           done
           echo "" >> release_notes.md
-
+          
           # Documentation
           echo "## 📚 Documentation" >> release_notes.md
-          echo "${{ steps.get_commits.outputs.commits }}" | grep -i "docs:" | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/^docs:\s*//i')
+          grep -i "docs:" commits.txt | while read -r line; do
+            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/docs: //i')
             author=$(echo "$line" | cut -d'|||' -f2)
             echo "- 📚 $message by @$author" >> release_notes.md
           done
           echo "" >> release_notes.md
-
+          
           # Chores
           echo "## 🔧 Chores" >> release_notes.md
-          echo "${{ steps.get_commits.outputs.commits }}" | grep -i "chore:" | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/^chore:\s*//i')
+          grep -i "chore:" commits.txt | while read -r line; do
+            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/chore: //i')
             author=$(echo "$line" | cut -d'|||' -f2)
             echo "- 🔧 $message by @$author" >> release_notes.md
           done
           echo "" >> release_notes.md
-
-          # Other commits (not matching any pattern)
+          
+          # Other changes (exclude merge and common patterns)
           echo "## 📋 Other Changes" >> release_notes.md
-          echo "${{ steps.get_commits.outputs.commits }}" | grep -v -i "feat:" | grep -v -i "fix:" | grep -v -i "docs:" | grep -v -i "chore:" | grep -v "Merge" | grep -v "Revert" | while read -r line; do
+          grep -v -i "feat:" commits.txt | grep -v -i "fix:" | grep -v -i "docs:" | grep -v -i "chore:" | grep -v "Merge" | grep -v "Revert" | while read -r line; do
             message=$(echo "$line" | cut -d'|||' -f1)
             author=$(echo "$line" | cut -d'|||' -f2)
             echo "- 📋 $message by @$author" >> release_notes.md
           done
-
-          # Print the generated notes
+          
+          # Show generated notes
+          echo "=== GENERATED RELEASE NOTES ==="
           cat release_notes.md
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body_path: release_notes.md
