@@ -13,79 +13,149 @@ template: |
 template-variables:
   CATEGORIZED_COMMITS: $COMMITS_TEMPLATE
 
-# Replacers to categorize commits and add emojis
+# Replacers to categorize commits by message prefixes and add emojis
 replacers:
   - search: '\$COMMITS_TEMPLATE'
     replace: >-
       ${{
-        const commitGroups = {
-          feat: [],
-          fix: [],
-          docs: [],
-          chore: [],
-          refactor: [],
-          perf: [],
-          test: [],
-          other: []
-        };
+        // Define commit categories with emojis and patterns
+        const categories = [
+          {
+            name: '🚀 Features',
+            patterns: ['feat:', 'feature:', 'feat(', 'feature('],
+            commits: []
+          },
+          {
+            name: '🐛 Bug Fixes',
+            patterns: ['fix:', 'bug:', 'fix(', 'bug('],
+            commits: []
+          },
+          {
+            name: '📚 Documentation',
+            patterns: ['docs:', 'documentation:', 'doc:', 'docs('],
+            commits: []
+          },
+          {
+            name: '⚡ Performance',
+            patterns: ['perf:', 'performance:', 'perf('],
+            commits: []
+          },
+          {
+            name: '🔧 Refactors',
+            patterns: ['refactor:', 'refactoring:', 'refactor('],
+            commits: []
+          },
+          {
+            name: '✅ Tests',
+            patterns: ['test:', 'tests:', 'testing:', 'test('],
+            commits: []
+          },
+          {
+            name: '📦 Chores',
+            patterns: ['chore:', 'chores:', 'build:', 'ci:', 'chore('],
+            commits: []
+          },
+          {
+            name: '🎨 Style Improvements',
+            patterns: ['style:', 'styles:', 'style('],
+            commits: []
+          },
+          {
+            name: '🔒 Security',
+            patterns: ['security:', 'sec:', 'security('],
+            commits: []
+          },
+          {
+            name: '🚧 Work in Progress',
+            patterns: ['wip:', 'work in progress:'],
+            commits: []
+          }
+        ];
 
+        const otherCommits = [];
+
+        // Process each commit
         commits.forEach(commit => {
           const message = commit.message.trim();
           const shaShort = commit.sha.substring(0, 7);
           const author = commit.author ? ` (@${commit.author.login})` : '';
           const entry = `- ${message} [${shaShort}]${author}`;
           
-          if (message.toLowerCase().startsWith('feat:') || message.toLowerCase().startsWith('feature:')) {
-            commitGroups.feat.push(entry);
-          } else if (message.toLowerCase().startsWith('fix:') || message.toLowerCase().startsWith('bug:')) {
-            commitGroups.fix.push(entry);
-          } else if (message.toLowerCase().startsWith('docs:') || message.toLowerCase().startsWith('documentation:')) {
-            commitGroups.docs.push(entry);
-          } else if (message.toLowerCase().startsWith('chore:')) {
-            commitGroups.chore.push(entry);
-          } else if (message.toLowerCase().startsWith('refactor:')) {
-            commitGroups.refactor.push(entry);
-          } else if (message.toLowerCase().startsWith('perf:') || message.toLowerCase().startsWith('performance:')) {
-            commitGroups.perf.push(entry);
-          } else if (message.toLowerCase().startsWith('test:')) {
-            commitGroups.test.push(entry);
-          } else {
-            commitGroups.other.push(entry);
+          let categorized = false;
+          
+          // Try to categorize by message prefix
+          for (const category of categories) {
+            for (const pattern of category.patterns) {
+              if (message.toLowerCase().startsWith(pattern)) {
+                category.commits.push(entry);
+                categorized = true;
+                break;
+              }
+            }
+            if (categorized) break;
+          }
+          
+          // If not categorized, check for common patterns
+          if (!categorized) {
+            const lowerMessage = message.toLowerCase();
+            if (lowerMessage.includes('add') || lowerMessage.includes('new') || lowerMessage.includes('implement')) {
+              categories[0].commits.push(entry); // Features
+            } else if (lowerMessage.includes('fix') || lowerMessage.includes('resolve') || lowerMessage.includes('error')) {
+              categories[1].commits.push(entry); // Bug fixes
+            } else if (lowerMessage.includes('update') || lowerMessage.includes('upgrade') || lowerMessage.includes('bump')) {
+              categories[6].commits.push(entry); // Chores
+            } else {
+              otherCommits.push(entry);
+            }
           }
         });
 
+        // Generate output with categories
         let output = '';
         
-        if (commitGroups.feat.length > 0) {
-          output += '### 🚀 Features\n' + commitGroups.feat.join('\n') + '\n\n';
-        }
-        if (commitGroups.fix.length > 0) {
-          output += '### 🐛 Bug Fixes\n' + commitGroups.fix.join('\n') + '\n\n';
-        }
-        if (commitGroups.perf.length > 0) {
-          output += '### ⚡ Performance Improvements\n' + commitGroups.perf.join('\n') + '\n\n';
-        }
-        if (commitGroups.refactor.length > 0) {
-          output += '### 🔧 Refactors\n' + commitGroups.refactor.join('\n') + '\n\n';
-        }
-        if (commitGroups.docs.length > 0) {
-          output += '### 📚 Documentation\n' + commitGroups.docs.join('\n') + '\n\n';
-        }
-        if (commitGroups.test.length > 0) {
-          output += '### ✅ Tests\n' + commitGroups.test.join('\n') + '\n\n';
-        }
-        if (commitGroups.chore.length > 0) {
-          output += '### 📦 Chores\n' + commitGroups.chore.join('\n') + '\n\n';
-        }
-        if (commitGroups.other.length > 0) {
-          output += '### 📋 Other Changes\n' + commitGroups.other.join('\n') + '\n\n';
+        // Add categorized sections
+        categories.forEach(category => {
+          if (category.commits.length > 0) {
+            output += `### ${category.name}\n${category.commits.join('\n')}\n\n`;
+          }
+        });
+        
+        // Add other changes section if needed
+        if (otherCommits.length > 0) {
+          output += `### 📋 Other Changes\n${otherCommits.join('\n')}\n\n`;
         }
 
-        return output.trim() || 'No significant changes.';
+        return output.trim() || '### 📝 No significant changes';
       }}
 
-# Configuration
+# Change template (fallback, but our replacer handles everything)
+change-template: |
+  - $TITLE
+
+# No changes template
+no-changes-template: "No significant changes."
+
+# GitHub configuration
+github:
+  release: true
+  preRelease: false
+  draft: false
+
+# Git configuration
+git:
+  requireCleanWorkingDir: false
+  commitMessage: "chore: release v${version}"
+  tagAnnotation: "Release v${version}"
+
+# Include all paths, exclude skip-changelog labeled PRs
 include-paths: []
-exclude-labels: ["skip-changelog"]
+exclude-labels: ["skip-changelog", "ignore-changelog"]
+
+# Sorting
 sort-direction: ascending
 sort-by: committed_date
+
+# Plugin options (optional)
+plugins:
+  npm:
+    skipChecks: true
