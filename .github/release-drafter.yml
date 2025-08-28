@@ -1,59 +1,47 @@
 name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
-
-# Use conventional changelog plugin
-plugins:
-  "@release-it/conventional-changelog":
-    preset: "conventionalcommits"
-    infile: "CHANGELOG.md"
-    header: "# Changelog"
-    types:
-      - type: "feat"
-        section: "🚀 Features"
-      - type: "fix"
-        section: "🐛 Bug Fixes"
-      - type: "docs"
-        section: "📚 Documentation"
-      - type: "style"
-        section: "🎨 Code Style"
-      - type: "refactor"
-        section: "🔧 Refactors"
-      - type: "perf"
-        section: "⚡ Performance"
-      - type: "test"
-        section: "✅ Tests"
-      - type: "build"
-        section: "📦 Build System"
-      - type: "ci"
-        section: "🔧 CI/CD"
-      - type: "chore"
-        section: "🧹 Chores"
-      - type: "revert"
-        section: "⏪ Reverts"
-
-# GitHub configuration
-github:
-  release: true
-  preRelease: false
-  draft: false
-  releaseNotes: |
-    # v$RESOLVED_VERSION ($(date +'%Y-%m-%d'))
-    
-    ## What's Changed
-    
-    $CHANGES
-    
-    **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
-
-# Git configuration
-git:
-  requireCleanWorkingDir: false
-  commitMessage: "chore: release v${version}"
-  tagAnnotation: "Release v${version}"
-
-# Exclude skip-changelog labeled PRs
-exclude-labels: ["skip-changelog", "ignore-changelog"]
-
-# Sorting
-sort-direction: ascending
-sort-by: committed_date
+ 
+categories:
+  - title: "🚨 Breaking Changes"
+    labels: ["breaking-change"]
+  - title: "✨ Features"
+    labels: ["feature"]
+  - title: "🐛 Bug Fixes"
+    labels: ["bug"]
+  - title: "🛠 Enhancements"
+    labels: ["enhancement"]
+  - title: "📦 Dependencies"
+    labels: ["dependencies"]
+    collapse-after: 2
+  - title: "📋 Other Changes"
+    labels: []
+    # fallback bucket when PRs don't match above categories
+ 
+label-extractors:
+  module:
+    labels:
+      - origination
+      - maintenance
+      - testation
+ 
+change-template: |
+  - $TITLE$IS_MODULE – #$NUMBER
+ 
+# Template if there are no matching PRs
+no-changes-template: "No significant changes."
+ 
+# Define custom template variables
+template-variables:
+  # If $MODULE is defined, prefix it in brackets
+  IS_MODULE: $IS_MODULE_TEMPLATE
+ 
+# Custom rendering logic for module label (optional)
+replacers:
+  - search: '\$IS_MODULE_TEMPLATE'
+    replace: >-
+      ${{
+        contains(labels, 'origination') && ' (`origination`)' ||
+        contains(labels, 'maintenance') && ' (`maintenance`)' ||
+        contains(labels, 'testation') && ' (`testation`)' ||
+        ''
+      }}
