@@ -1,53 +1,59 @@
 name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 
-categories:
-  - title: "🚀 Features"
-    labels: ["feature"]
-    # Also match commit messages starting with feat:/feature:
-    collapse: false
-  - title: "🐛 Bug Fixes"
-    labels: ["bug"]
-    # Also match commit messages starting with fix:/bug:
-    collapse: false
-  - title: "📚 Documentation"
-    labels: ["documentation"]
-    # Also match commit messages starting with docs:
-    collapse: false
-  - title: "⚡ Performance Improvements"
-    labels: ["performance"]
-    # Also match commit messages starting with perf:
-    collapse: false
-  - title: "🔧 Refactors"
-    labels: ["refactor"]
-    collapse: false
-  - title: "✅ Tests"
-    labels: ["test"]
-    collapse: false
-  - title: "📦 Chores"
-    labels: ["chore"]
-    collapse: false
-  - title: "📋 Other Changes"
-    labels: []
-    collapse: false
+# Use conventional changelog plugin
+plugins:
+  "@release-it/conventional-changelog":
+    preset: "conventionalcommits"
+    infile: "CHANGELOG.md"
+    header: "# Changelog"
+    types:
+      - type: "feat"
+        section: "🚀 Features"
+      - type: "fix"
+        section: "🐛 Bug Fixes"
+      - type: "docs"
+        section: "📚 Documentation"
+      - type: "style"
+        section: "🎨 Code Style"
+      - type: "refactor"
+        section: "🔧 Refactors"
+      - type: "perf"
+        section: "⚡ Performance"
+      - type: "test"
+        section: "✅ Tests"
+      - type: "build"
+        section: "📦 Build System"
+      - type: "ci"
+        section: "🔧 CI/CD"
+      - type: "chore"
+        section: "🧹 Chores"
+      - type: "revert"
+        section: "⏪ Reverts"
 
-# Simple template that uses the built-in categorization
-template: |
-  # v$RESOLVED_VERSION ($(date +'%Y-%m-%d'))
-  
-  $CHANGES
-  
-  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
+# GitHub configuration
+github:
+  release: true
+  preRelease: false
+  draft: false
+  releaseNotes: |
+    # v$RESOLVED_VERSION ($(date +'%Y-%m-%d'))
+    
+    ## What's Changed
+    
+    $CHANGES
+    
+    **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
 
-# Change template for individual items
-change-template: |
-  - $TITLE ([${commit.sha.substring(0, 7)}]${commit.author ? ' by @' + commit.author.login : ''})
+# Git configuration
+git:
+  requireCleanWorkingDir: false
+  commitMessage: "chore: release v${version}"
+  tagAnnotation: "Release v${version}"
 
-# Template if there are no changes
-no-changes-template: "No significant changes."
+# Exclude skip-changelog labeled PRs
+exclude-labels: ["skip-changelog", "ignore-changelog"]
 
-# Configuration
-include-paths: []
-exclude-labels: ["skip-changelog"]
+# Sorting
 sort-direction: ascending
 sort-by: committed_date
