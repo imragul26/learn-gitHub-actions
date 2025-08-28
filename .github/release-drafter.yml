@@ -1,56 +1,158 @@
-name-template: "v$RESOLVED_VERSION 🚀"
+name-template: "v$RESOLVED_VERSION"
+
 tag-template: "v$RESOLVED_VERSION"
-
-# Simple template with hardcoded categories
+ 
 template: |
-  ## What's Changed 🌟
-  
-  {% if commits %}
-  ### ✨ Features
-  {% for commit in commits %}
-    {% if commit.message contains 'feat:' or commit.message contains 'feature:' %}
-  - ✨ {{ commit.message | remove: 'feat:' | remove: 'feature:' | strip }} by @{{ commit.author.name }}
-    {% endif %}
-  {% endfor %}
 
-  ### 🐛 Bug Fixes
-  {% for commit in commits %}
-    {% if commit.message contains 'fix:' or commit.message contains 'bug:' %}
-  - 🐛 {{ commit.message | remove: 'fix:' | remove: 'bug:' | strip }} by @{{ commit.author.name }}
-    {% endif %}
-  {% endfor %}
+  # v$RESOLVED_VERSION ($(date +'%Y-%m-%d'))
 
-  ### 📚 Documentation
-  {% for commit in commits %}
-    {% if commit.message contains 'docs:' or commit.message contains 'documentation:' %}
-  - 📚 {{ commit.message | remove: 'docs:' | remove: 'documentation:' | strip }} by @{{ commit.author.name }}
-    {% endif %}
-  {% endfor %}
+  ## Commit Details
 
-  ### 🔧 Chores & Maintenance
-  {% for commit in commits %}
-    {% if commit.message contains 'chore:' or commit.message contains 'build:' or commit.message contains 'ci:' %}
-  - 🔧 {{ commit.message | remove: 'chore:' | remove: 'build:' | remove: 'ci:' | strip }} by @{{ commit.author.name }}
-    {% endif %}
-  {% endfor %}
+  $COMMIT_MESSAGES
 
-  ### 📦 Dependencies
-  {% for commit in commits %}
-    {% if commit.message contains 'deps:' or commit.message contains 'dependencies:' %}
-  - 📦 {{ commit.message | remove: 'deps:' | remove: 'dependencies:' | strip }} by @{{ commit.author.name }}
-    {% endif %}
-  {% endfor %}
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
+ 
+categories: []
+ 
+change-template: ""
+ 
+template-variables:
 
-  ### 📋 Other Changes
-  {% for commit in commits %}
-    {% unless commit.message contains 'feat:' or commit.message contains 'feature:' or commit.message contains 'fix:' or commit.message contains 'bug:' or commit.message contains 'docs:' or commit.message contains 'chore:' or commit.message contains 'deps:' or commit.message contains 'Merge' or commit.message contains 'Revert' %}
-  - 📋 {{ commit.message | strip }} by @{{ commit.author.name }}
-    {% endunless %}
-  {% endfor %}
-  {% endif %}
+  COMMIT_MESSAGES: $COMMITS_TEMPLATE
+ 
+replacers:
 
-# Exclude merge commits
-exclude:
-  commits:
-    - "/^Merge/"
-    - "/^Revert/"
+  - search: '\$COMMITS_TEMPLATE'
+
+    replace: >-
+
+      ${{
+
+        const commitGroups = {
+
+          feat: [],
+
+          fix: [],
+
+          docs: [],
+
+          chore: [],
+
+          refactor: [],
+
+          perf: [],
+
+          test: [],
+
+          other: []
+
+        };
+ 
+        commits.forEach(commit => {
+
+          const message = commit.message.trim();
+
+          const shaShort = commit.sha.substring(0, 7);
+
+          const author = commit.author ? ` (@${commit.author.login})` : '';
+
+          const entry = `- ${message} [${shaShort}]${author}`;
+
+          if (message.toLowerCase().startsWith('feat:')) {
+
+            commitGroups.feat.push(entry);
+
+          } else if (message.toLowerCase().startsWith('fix:')) {
+
+            commitGroups.fix.push(entry);
+
+          } else if (message.toLowerCase().startsWith('docs:')) {
+
+            commitGroups.docs.push(entry);
+
+          } else if (message.toLowerCase().startsWith('chore:')) {
+
+            commitGroups.chore.push(entry);
+
+          } else if (message.toLowerCase().startsWith('refactor:')) {
+
+            commitGroups.refactor.push(entry);
+
+          } else if (message.toLowerCase().startsWith('perf:')) {
+
+            commitGroups.perf.push(entry);
+
+          } else if (message.toLowerCase().startsWith('test:')) {
+
+            commitGroups.test.push(entry);
+
+          } else {
+
+            commitGroups.other.push(entry);
+
+          }
+
+        });
+ 
+        let output = '';
+
+        if (commitGroups.feat.length > 0) {
+
+          output += '### 🚀 Features\n' + commitGroups.feat.join('\n') + '\n\n';
+
+        }
+
+        if (commitGroups.fix.length > 0) {
+
+          output += '### 🐛 Bug Fixes\n' + commitGroups.fix.join('\n') + '\n\n';
+
+        }
+
+        if (commitGroups.perf.length > 0) {
+
+          output += '### ⚡ Performance Improvements\n' + commitGroups.perf.join('\n') + '\n\n';
+
+        }
+
+        if (commitGroups.refactor.length > 0) {
+
+          output += '### 🔧 Refactors\n' + commitGroups.refactor.join('\n') + '\n\n';
+
+        }
+
+        if (commitGroups.docs.length > 0) {
+
+          output += '### 📚 Documentation\n' + commitGroups.docs.join('\n') + '\n\n';
+
+        }
+
+        if (commitGroups.test.length > 0) {
+
+          output += '### ✅ Tests\n' + commitGroups.test.join('\n') + '\n\n';
+
+        }
+
+        if (commitGroups.chore.length > 0) {
+
+          output += '### 📦 Chores\n' + commitGroups.chore.join('\n') + '\n\n';
+
+        }
+
+        if (commitGroups.other.length > 0) {
+
+          output += '### 📋 Other Changes\n' + commitGroups.other.join('\n') + '\n\n';
+
+        }
+ 
+        return output.trim();
+
+      }}
+ 
+include-paths: []
+
+exclude-labels: ["skip-changelog"]
+
+sort-direction: ascending
+
+sort-by: committed_date
+ 
