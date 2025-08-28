@@ -63,7 +63,7 @@ commit-parser:
     deps: "📦 Dependencies"
     breaking: "🚨 Breaking Changes"
 
-# Template for changes - FIXED to include category grouping
+# Template for changes
 change-template: |
   - $TITLE$SCOPE – $AUTHOR (#$NUMBER)
 
