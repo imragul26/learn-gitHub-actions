@@ -1,127 +1,129 @@
-name: Generate Release Notes from Commits
+name: Generate Release Notes
 
 on:
   push:
     tags:
-      - 'v*'  # Runs when you push tags like v1.0.0, v1.1.0, etc.
+      - 'v*'
 
 jobs:
   generate-release-notes:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Get all commit history
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: Generate categorized release notes
-        run: |
-          # Create release notes file
-          echo "# 🚀 Release Notes" > release_notes.md
-          echo "" >> release_notes.md
+    - name: Generate Release Notes
+      id: generate_notes
+      run: |
+        # Get the latest tag
+        LATEST_TAG=$(git describe --tags --abbrev=0)
+        
+        # Get previous tag (if exists)
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 "$LATEST_TAG"^ 2>/dev/null || echo "")
+        
+        # Get commit messages since last tag or all commits if no previous tag
+        if [ -z "$PREVIOUS_TAG" ]; then
+          COMMITS=$(git log --pretty=format:"%s" --reverse)
+        else
+          COMMITS=$(git log --pretty=format:"%s" "$PREVIOUS_TAG".."$LATEST_TAG" --reverse)
+        fi
+        
+        # Categorize commits with emojis
+        echo "COMMIT_CATEGORIES<<EOF" >> $GITHUB_ENV
+        echo "$COMMITS" | awk '
+        BEGIN {
+          categories["feat"] = "🚀 Features"
+          categories["fix"] = "🐛 Bug Fixes"
+          categories["docs"] = "📚 Documentation"
+          categories["style"] = "💄 Code Style"
+          categories["refactor"] = "♻️ Refactoring"
+          categories["perf"] = "⚡ Performance"
+          categories["test"] = "✅ Tests"
+          categories["chore"] = "🔧 Chores"
+          categories["ci"] = "👷 CI/CD"
+          categories["build"] = "📦 Build"
+          categories["revert"] = "⏪ Reverts"
+          categories["security"] = "🔒 Security"
+        }
+        
+        {
+          # Default category
+          category = "📝 Other Changes"
+          emoji = "📝"
           
-          # Get current tag
-          CURRENT_TAG=$(git describe --tags --abbrev=0)
-          echo "## Version: $CURRENT_TAG" >> release_notes.md
-          echo "" >> release_notes.md
+          # Check for conventional commit format
+          if (match($0, /^([a-z]+)(\([^)]+\))?: /)) {
+            type = substr($0, RSTART, RLENGTH)
+            gsub(/[(:].*/, "", type)
+            
+            if (type in categories) {
+              split(categories[type], cat_emoji, " ")
+              category = cat_emoji[2]
+              for (i=3; i<=length(cat_emoji); i++) category = category " " cat_emoji[i]
+              emoji = cat_emoji[1]
+            }
+          }
           
-          # Get previous tag or start from beginning
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 $CURRENT_TAG^ 2>/dev/null || echo "")
+          # Remove commit type prefix for cleaner message
+          message = $0
+          sub(/^[a-z]+(\([^)]+\))?: /, "", message)
           
-          if [ -z "$PREVIOUS_TAG" ]; then
-            echo "### All commits in this release:" >> release_notes.md
-            COMMIT_RANGE=""
-          else
-            echo "### Changes since $PREVIOUS_TAG:" >> release_notes.md
-            COMMIT_RANGE="$PREVIOUS_TAG..$CURRENT_TAG"
-          fi
-          echo "" >> release_notes.md
+          # Store in categories array
+          categories_array[category][length(categories_array[category]) + 1] = emoji " " message
+        }
+        
+        END {
+          # Generate markdown output
+          print "# Release Notes - '"$LATEST_TAG"'\n"
           
-          # Extract and categorize commits
-          git log $COMMIT_RANGE --oneline --format="%s|||%an" > all_commits.txt
+          if (PREVIOUS_TAG != "") {
+            print "## Changes since " PREVIOUS_TAG "\n"
+          }
           
-          # ✨ Features
-          echo "#### ✨ Features" >> release_notes.md
-          grep -i "feat:" all_commits.txt | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/feat: //i' | sed 's/feature: //i' | xargs)
-            author=$(echo "$line" | cut -d'|||' -f2)
-            if [ ! -z "$message" ]; then
-              echo "- ✨ $message by @$author" >> release_notes.md
-            fi
-          done
-          echo "" >> release_notes.md
+          # Print categorized commits
+          for (category in categories_array) {
+            print "### " category "\n"
+            for (i in categories_array[category]) {
+              print "- " categories_array[category][i]
+            }
+            print ""
+          }
           
-          # 🐛 Bug Fixes
-          echo "#### 🐛 Bug Fixes" >> release_notes.md
-          grep -i "fix:" all_commits.txt | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/fix: //i' | sed 's/bug: //i' | xargs)
-            author=$(echo "$line" | cut -d'|||' -f2)
-            if [ ! -z "$message" ]; then
-              echo "- 🐛 $message by @$author" >> release_notes.md
-            fi
-          done
-          echo "" >> release_notes.md
-          
-          # 📚 Documentation
-          echo "#### 📚 Documentation" >> release_notes.md
-          grep -i "docs:" all_commits.txt | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/docs: //i' | sed 's/documentation: //i' | xargs)
-            author=$(echo "$line" | cut -d'|||' -f2)
-            if [ ! -z "$message" ]; then
-              echo "- 📚 $message by @$author" >> release_notes.md
-            fi
-          done
-          echo "" >> release_notes.md
-          
-          # 🔧 Chores
-          echo "#### 🔧 Chores" >> release_notes.md
-          grep -i "chore:" all_commits.txt | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/chore: //i' | sed 's/maintenance: //i' | xargs)
-            author=$(echo "$line" | cut -d'|||' -f2)
-            if [ ! -z "$message" ]; then
-              echo "- 🔧 $message by @$author" >> release_notes.md
-            fi
-          done
-          echo "" >> release_notes.md
-          
-          # 📦 Dependencies
-          echo "#### 📦 Dependencies" >> release_notes.md
-          grep -i "deps:" all_commits.txt | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | sed 's/deps: //i' | sed 's/dependencies: //i' | xargs)
-            author=$(echo "$line" | cut -d'|||' -f2)
-            if [ ! -z "$message" ]; then
-              echo "- 📦 $message by @$author" >> release_notes.md
-            fi
-          done
-          echo "" >> release_notes.md
-          
-          # 📋 Other Changes (exclude merge commits and common patterns)
-          echo "#### 📋 Other Changes" >> release_notes.md
-          grep -v -i "feat:" all_commits.txt | \
-          grep -v -i "fix:" | \
-          grep -v -i "docs:" | \
-          grep -v -i "chore:" | \
-          grep -v -i "deps:" | \
-          grep -v "Merge" | \
-          grep -v "Revert" | while read -r line; do
-            message=$(echo "$line" | cut -d'|||' -f1 | xargs)
-            author=$(echo "$line" | cut -d'|||' -f2)
-            if [ ! -z "$message" ]; then
-              echo "- 📋 $message by @$author" >> release_notes.md
-            fi
-          done
-          
-          # Show generated notes
-          echo "=== GENERATED RELEASE NOTES ==="
-          cat release_notes.md
+          # Print uncategorized commits if any
+          if ("📝 Other Changes" in categories_array) {
+            print "### 📝 Other Changes\n"
+            for (i in categories_array["📝 Other Changes"]) {
+              print "- " categories_array["📝 Other Changes"][i]
+            }
+          }
+        }
+        ' > release_notes.md
+        
+        # Read the generated notes
+        RELEASE_NOTES=$(cat release_notes.md)
+        echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+        echo "$RELEASE_NOTES" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          body_path: release_notes.md
-          draft: false
-          prerelease: false
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          ${{ env.RELEASE_NOTES }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Display Generated Notes
+      run: |
+        echo "Generated Release Notes:"
+        echo "------------------------"
+        cat release_notes.md
