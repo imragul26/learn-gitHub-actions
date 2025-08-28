@@ -1,1 +1,56 @@
+name-template: "v$RESOLVED_VERSION 🚀"
+tag-template: "v$RESOLVED_VERSION"
 
+# Simple template with hardcoded categories
+template: |
+  ## What's Changed 🌟
+  
+  {% if commits %}
+  ### ✨ Features
+  {% for commit in commits %}
+    {% if commit.message contains 'feat:' or commit.message contains 'feature:' %}
+  - ✨ {{ commit.message | remove: 'feat:' | remove: 'feature:' | strip }} by @{{ commit.author.name }}
+    {% endif %}
+  {% endfor %}
+
+  ### 🐛 Bug Fixes
+  {% for commit in commits %}
+    {% if commit.message contains 'fix:' or commit.message contains 'bug:' %}
+  - 🐛 {{ commit.message | remove: 'fix:' | remove: 'bug:' | strip }} by @{{ commit.author.name }}
+    {% endif %}
+  {% endfor %}
+
+  ### 📚 Documentation
+  {% for commit in commits %}
+    {% if commit.message contains 'docs:' or commit.message contains 'documentation:' %}
+  - 📚 {{ commit.message | remove: 'docs:' | remove: 'documentation:' | strip }} by @{{ commit.author.name }}
+    {% endif %}
+  {% endfor %}
+
+  ### 🔧 Chores & Maintenance
+  {% for commit in commits %}
+    {% if commit.message contains 'chore:' or commit.message contains 'build:' or commit.message contains 'ci:' %}
+  - 🔧 {{ commit.message | remove: 'chore:' | remove: 'build:' | remove: 'ci:' | strip }} by @{{ commit.author.name }}
+    {% endif %}
+  {% endfor %}
+
+  ### 📦 Dependencies
+  {% for commit in commits %}
+    {% if commit.message contains 'deps:' or commit.message contains 'dependencies:' %}
+  - 📦 {{ commit.message | remove: 'deps:' | remove: 'dependencies:' | strip }} by @{{ commit.author.name }}
+    {% endif %}
+  {% endfor %}
+
+  ### 📋 Other Changes
+  {% for commit in commits %}
+    {% unless commit.message contains 'feat:' or commit.message contains 'feature:' or commit.message contains 'fix:' or commit.message contains 'bug:' or commit.message contains 'docs:' or commit.message contains 'chore:' or commit.message contains 'deps:' or commit.message contains 'Merge' or commit.message contains 'Revert' %}
+  - 📋 {{ commit.message | strip }} by @{{ commit.author.name }}
+    {% endunless %}
+  {% endfor %}
+  {% endif %}
+
+# Exclude merge commits
+exclude:
+  commits:
+    - "/^Merge/"
+    - "/^Revert/"
