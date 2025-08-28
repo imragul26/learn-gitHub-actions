@@ -1,4 +1,4 @@
-package com.github.actions;
+ package com.github.actions;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,7 +15,7 @@ public class MyRestController {
 	@GetMapping(value = "/")
 	public String name() {
 
-		return "   Product Added succesfully in your cart. Please check and let me know. ";
+		return "   Product Added succesfully in your cart. Please check and let me know.Check tag release note ";
 
 	}
 
