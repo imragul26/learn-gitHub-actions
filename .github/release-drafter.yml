@@ -2,52 +2,43 @@ name-template: "v$RESOLVED_VERSION 🚀"
 tag-template: "v$RESOLVED_VERSION"
 
 categories:
-  - title: "🚨 Breaking Changes"
-    labels: ["breaking-change"]
-    
-  - title: "✨ New Features"
+  - title: "✨ Features"
     labels: ["feature"]
-    
-  - title: "🐛 Bug Fixes" 
+  - title: "🐛 Bug Fixes"
     labels: ["bug"]
-    
   - title: "📚 Documentation"
     labels: ["documentation"]
-    
-  - title: "🔧 Chores & Maintenance"
+  - title: "🔧 Chores"
     labels: ["chore"]
-    
   - title: "📦 Dependencies"
     labels: ["dependencies"]
-    
-  - title: "📋 Other Changes"
-    labels: []
 
-# CRITICAL: This forces commit parsing instead of PR parsing
+# CRITICAL: This template forces commit-based display
 template: |
   ## What's Changed
-  $CHANGES
+  
+  $CATEGORIES
 
-# Use this simple template for each change
+# Simple change template without PR references
 change-template: |
   - $TITLE by @$AUTHOR
 
-# This groups commits by category with emoji headers
+# Category template with emoji headers
 category-template: |
-  ### $TITLE
+  ## $TITLE
   $COMMITS
 
-# Proper commit parsing configuration
+# Force commit parsing (most important setting)
 commit-parser:
-  pattern: "^(\w+)(?:\(([\w\-\.]+)\))?!?:\s*(.+)$"
+  pattern: "^(\w+)(?:\\(([\\w\\-\\.]+)\\))?!?:\\s*(.+)$"
   map:
-    feat: "✨ New Features"
-    fix: "🐛 Bug Fixes" 
+    feat: "✨ Features"
+    fix: "🐛 Bug Fixes"
     docs: "📚 Documentation"
-    chore: "🔧 Chores & Maintenance"
+    chore: "🔧 Chores"
     deps: "📦 Dependencies"
 
-# Add emojis based on commit type
+# Add emojis to each commit line
 replacers:
   - search: '^- '
     replace: |-
@@ -60,17 +51,21 @@ replacers:
         '- 📋 '
       }}
 
+# Exclude merge commits and other noise
 exclude:
   commits:
     - "^Merge"
     - "^Revert"
-    - "^chore\(release\):"
-    - "^docs\(changelog\):"
+    - "^chore\\(release\\):"
+    - "^docs\\(changelog\\):"
 
+# Include author but not PR numbers
 include:
   commit-hash: false
   commit-author: true
   commit-date: false
+  pull-request-number: false  # ← CRITICAL: Disable PR numbers
+  pull-request-title: false   # ← CRITICAL: Disable PR titles
 
 sort:
   by: "date"
