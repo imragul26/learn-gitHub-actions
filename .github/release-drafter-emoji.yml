@@ -1,0 +1,92 @@
+name-template: 'v$RESOLVED_VERSION 🌟'
+tag-template: 'v$RESOLVED_VERSION'
+
+categories:
+  - title: '🚀 Features & Enhancements'
+    regex: '(🚀|⭐|✨|🎉|🌟|💫|🔥|🙌|🆕|✅|🔼|➕|🪄) feat|feature|enhancement|new|add|implement'
+    emojis: ['🚀', '⭐', '✨', '🎉', '🌟', '💫', '🔥', '🙌', '🆕', '✅', '🔼', '➕', '🪄']
+  - title: '🐛 Bug Fixes'
+    regex: '(🐛|🚑|🩹|💊|🪲|🐞|🔧|🔨|🛠️|⚒️|✅|✔️|🔍) fix|bug|error|issue|resolve|patch'
+    emojis: ['🐛', '🚑', '🩹', '💊', '🪲', '🐞', '🔧', '🔨', '🛠️', '⚒️', '✅', '✔️', '🔍']
+  - title: '📚 Documentation'
+    regex: '(📚|📖|📄|📃|📋|📝|✏️|🖊️|🖋️|🔖|🏷️) doc|readme|wiki|guide|manual|comment'
+    emojis: ['📚', '📖', '📄', '📃', '📋', '📝', '✏️', '🖊️', '🖋️', '🔖', '🏷️']
+  - title: '♻️ Refactoring'
+    regex: '(♻️|🔁|🔄|⚙️|🎨|🏗️|📦|🧩|🧱|🧹) refactor|cleanup|restructure|reorganize|optimize'
+    emojis: ['♻️', '🔁', '🔄', '⚙️', '🎨', '🏗️', '📦', '🧩', '🧱', '🧹']
+  - title: '⚡ Performance'
+    regex: '(⚡|🚀|💨|🐇|🏎️|🎯|📈|📊|🔋) perf|performance|speed|optimize|fast|efficient'
+    emojis: ['⚡', '🚀', '💨', '🐇', '🏎️', '🎯', '📈', '📊', '🔋']
+  - title: '✅ Tests'
+    regex: '(✅|✔️|🧪|🔬|📋|🎯|🎪|⚗️|🧫) test|spec|coverage|assert|verify|unit|integration'
+    emojis: ['✅', '✔️', '🧪', '🔬', '📋', '🎯', '🎪', '⚗️', '🧫']
+  - title: '🔧 Configuration'
+    regex: '(🔧|⚙️|🎛️|📱|📟|📠|💾|📀|🧩) config|setup|install|deploy|environment|property'
+    emojis: ['🔧', '⚙️', '🎛️', '📱', '📟', '📠', '💾', '📀', '🧩']
+  - title: '📦 Dependencies'
+    regex: '(📦|⬆️|⬇️|🔄|📌|📍|🎯|🔗|🔌) dep|dependency|upgrade|update|bump|version|package'
+    emojis: ['📦', '⬆️', '⬇️', '🔄', '📌', '📍', '🎯', '🔗', '🔌']
+  - title: '🔨 Build & CI/CD'
+    regex: '(🔨|🏗️|📦|🚀|🎯|⚙️|🔧|🛠️|📊) build|ci|cd|pipeline|github|action|workflow|deploy'
+    emojis: ['🔨', '🏗️', '📦', '🚀', '🎯', '⚙️', '🔧', '🛠️', '📊']
+  - title: '🌐 Spring Boot Specific'
+    regex: '(🌐|🍃|🟢|✅|⚙️|🔧|🛡️|📡|🔌) spring|boot|actuator|autoconfig|starter|jpa|repository|endpoint'
+    emojis: ['🌐', '🍃', '🟢', '✅', '⚙️', '🔧', '🛡️', '📡', '🔌']
+  - title: '📱 API Changes'
+    regex: '(📱|🌐|🔌|🔗|📡|📶|🔄|⚡|🎯) api|endpoint|rest|controller|service|interface|contract'
+    emojis: ['📱', '🌐', '🔌', '🔗', '📡', '📶', '🔄', '⚡', '🎯']
+  - title: '🧹 Chores & Maintenance'
+    regex: '(🧹|🔧|📦|📋|📝|⚙️|🎨|🏗️|🧱) chore|maintenance|clean|tidy|organize|housekeeping'
+    emojis: ['🧹', '🔧', '📦', '📋', '📝', '⚙️', '🎨', '🏗️', '🧱']
+  - title: '🚧 WIP & Experimental'
+    regex: '(🚧|🧪|🔬|⚗️|🧫|📋|🎯|⚠️|🔶) wip|experiment|poc|prototype|draft|temporary'
+    emojis: ['🚧', '🧪', '🔬', '⚗️', '🧫', '📋', '🎯', '⚠️', '🔶']
+
+template: |
+  ## What's Changed 🌟
+  
+  $CHANGES
+  
+  ### 📊 Summary
+  - **Total Changes**: $CHANGE_COUNT
+  - **Contributors**: $CONTRIBUTOR_COUNT
+  
+  ### 👥 Contributors
+  $CONTRIBUTORS
+  
+  **📖 Full Changelog**: $URL
+
+version-resolver:
+  major:
+    regex: '(breaking|major|💥|🚨|⚠️)'
+  minor:
+    regex: '(feat|feature|enhancement|🚀|⭐|✨)'
+  patch:
+    regex: '(fix|bug|patch|🐛|🔧|🩹)'
+  default: patch
+
+change-template: |
+  {% if commit.message %}${{formatCommitMessage(commit.message)}}{% else %}${{formatCommitMessage(pull_request.title)}}{% endif %} by @$AUTHOR (#$NUMBER)
+
+# Custom function to format commit messages with emojis
+formatCommitMessage: |
+  function(message) {
+    // Extract the first emoji from the message
+    const emojiMatch = message.match(/[\p{Emoji}]/u);
+    const firstEmoji = emojiMatch ? emojiMatch[0] + ' ' : '';
+    
+    // Remove multiple spaces and trim
+    const cleanMessage = message.replace(/\s+/g, ' ').trim();
+    
+    return firstEmoji + cleanMessage;
+  }
+
+# Exclude patterns that don't contribute to meaningful changelog
+exclude-labels:
+  - 'skip-changelog'
+  - 'wip'
+  - 'draft'
+
+exclude-contributors:
+  - 'dependabot'
+  - 'github-actions'
