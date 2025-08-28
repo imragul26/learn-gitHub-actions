@@ -1,152 +1,126 @@
-name-template: "v$RESOLVED_VERSION 🌟"
+name-template: "v$RESOLVED_VERSION 🚀"
 tag-template: "v$RESOLVED_VERSION"
 
 categories:
   - title: "🚨 Breaking Changes"
-    labels: ["breaking"]
-    commit-types: ["break", "breaking"]
-  
-  - title: "✨ New Features"
+    labels: ["breaking-change"]
+    collapse: false
+    
+  - title: "✨ New Features" 
     labels: ["feature"]
-    commit-types: ["feat", "feature"]
-  
+    collapse: false
+    
   - title: "🐛 Bug Fixes"
     labels: ["bug"]
-    commit-types: ["fix", "bugfix"]
-  
+    collapse: false
+    
   - title: "📚 Documentation"
     labels: ["documentation"]
-    commit-types: ["docs"]
-  
+    collapse: false
+    
   - title: "🎨 Code Style"
     labels: ["style"]
-    commit-types: ["style"]
-  
-  - title: "♻️ Code Refactoring"
+    collapse: false
+    
+  - title: "♻️ Refactoring"
     labels: ["refactor"]
-    commit-types: ["refactor"]
-  
+    collapse: false
+    
   - title: "⚡ Performance"
-    labels: ["performance"]
-    commit-types: ["perf"]
-  
+    labels: ["performance"] 
+    collapse: false
+    
   - title: "✅ Tests"
     labels: ["test"]
-    commit-types: ["test"]
-  
+    collapse: false
+    
   - title: "📦 Dependencies"
     labels: ["dependencies"]
-    commit-types: ["deps"]
-    collapse-after: 3
-  
+    collapse: false
+    
   - title: "🔧 Chores"
     labels: ["chore"]
-    commit-types: ["chore"]
-  
-  - title: "🏗️ Build System"
-    labels: ["build"]
-    commit-types: ["build"]
-  
-  - title: "🌐 CI/CD"
-    labels: ["ci"]
-    commit-types: ["ci"]
-  
-  - title: "📋 Other Changes"
-    labels: []
-    commit-types: []
+    collapse: false
 
-commit-parser:
-  pattern: "^(\w+)(?:\(([\w\-\.]+)\))?(!)?:\s*(.+)$"
-  map:
-    break: "🚨 Breaking Changes"
-    breaking: "🚨 Breaking Changes"
-    feat: "✨ New Features"
-    fix: "🐛 Bug Fixes"
-    docs: "📚 Documentation"
-    style: "🎨 Code Style"
-    refactor: "♻️ Code Refactoring"
-    perf: "⚡ Performance"
-    test: "✅ Tests"
-    deps: "📦 Dependencies"
-    chore: "🔧 Chores"
-    build: "🏗️ Build System"
-    ci: "🌐 CI/CD"
+template: |
+  ## What's Changed
 
-change-template: |
-  - $TITLE$SCOPE – by $AUTHOR in #$NUMBER
+  $CHANGES
+
+  ## Contributors
+
+  $CONTRIBUTORS
+
+change-template: |- 
+  - $EMOJI **$TITLE**$SCOPE by @$AUTHOR in #$NUMBER
+
+change-title-escapes: '\<*_&' # You can add other characters if needed
 
 category-template: |
-  ## $CATEGORY_TITLE
+  ### $TITLE
   $COMMITS
 
-template-variables:
-  CATEGORY_TITLE: $CATEGORY_TITLE_WITH_EMOJI
-  SCOPE: $SCOPE_TEMPLATE
-  AUTHOR: $COMMIT_AUTHOR
-
-replacers:
-  - search: '\$CATEGORY_TITLE_WITH_EMOJI'
-    replace: >-
-      ${{
-        title === 'Breaking Changes' && '🚨 Breaking Changes' ||
-        title === 'New Features' && '✨ New Features' ||
-        title === 'Bug Fixes' && '🐛 Bug Fixes' ||
-        title === 'Documentation' && '📚 Documentation' ||
-        title === 'Code Style' && '🎨 Code Style' ||
-        title === 'Code Refactoring' && '♻️ Code Refactoring' ||
-        title === 'Performance' && '⚡ Performance' ||
-        title === 'Tests' && '✅ Tests' ||
-        title === 'Dependencies' && '📦 Dependencies' ||
-        title === 'Chores' && '🔧 Chores' ||
-        title === 'Build System' && '🏗️ Build System' ||
-        title === 'CI/CD' && '🌐 CI/CD' ||
-        title === 'Other Changes' && '📋 Other Changes' ||
-        title
-      }}
-
-  - search: '\$SCOPE_TEMPLATE'
-    replace: >-
-      ${{
-        scope ? ` **(${scope})**` : ''
-      }}
-
-  - search: '\$COMMIT_AUTHOR'
-    replace: >-
-      ${{
-        author ? `@${author.split(' ')[0]}` : 'Unknown'
-      }}
-
-  - search: '^- '
-    replace: >-
-      ${{
-        type === 'break' && '- 🚨 ' ||
-        type === 'breaking' && '- 🚨 ' ||
-        type === 'feat' && '- ✨ ' ||
-        type === 'fix' && '- 🐛 ' ||
-        type === 'docs' && '- 📚 ' ||
-        type === 'style' && '- 🎨 ' ||
-        type === 'refactor' && '- ♻️ ' ||
-        type === 'perf' && '- ⚡ ' ||
-        type === 'test' && '- ✅ ' ||
-        type === 'deps' && '- 📦 ' ||
-        type === 'chore' && '- 🔧 ' ||
-        type === 'build' && '- 🏗️ ' ||
-        type === 'ci' && '- 🌐 ' ||
-        '- 📋 '
-      }}
-
 exclude:
+  labels:
+    - "skip-changelog"
   commits:
     - "^Merge"
     - "^Revert"
     - "^chore\(release\):"
     - "^docs\(changelog\):"
 
+# --- EMOJI MAPPING --- #
+replacers:
+  # Map commit types to emojis
+  - search: '\\$EMOJI'
+    replace: |
+      ${{ 
+        contains(github.event.commits[0].message, 'feat:') && '✨' ||
+        contains(github.event.commits[0].message, 'fix:') && '🐛' ||
+        contains(github.event.commits[0].message, 'docs:') && '📚' ||
+        contains(github.event.commits[0].message, 'style:') && '🎨' ||
+        contains(github.event.commits[0].message, 'refactor:') && '♻️' ||
+        contains(github.event.commits[0].message, 'perf:') && '⚡' ||
+        contains(github.event.commits[0].message, 'test:') && '✅' ||
+        contains(github.event.commits[0].message, 'chore:') && '🔧' ||
+        contains(github.event.commits[0].message, 'build:') && '📦' ||
+        contains(github.event.commits[0].message, 'ci:') && '🌐' ||
+        '📋' 
+      }}
+
+  # Add scope if present
+  - search: '\\$SCOPE'
+    replace: |
+      ${{ 
+        github.event.commits[0].message.match(/\(([^)]+)\):/) ? ` **(${github.event.commits[0].message.match(/\(([^)]+)\):/)[1]})**` : '' 
+      }}
+
+# --- COMMIT PARSING --- #
+commit-parser:
+  pattern: "^(?<type>\\w+)(?:\\((?<scope>[\\w\\-\.]+)\\))?!?:\\s?(?<description>.+)$"
+  map:
+    feat: "✨ New Features"
+    fix: "🐛 Bug Fixes"
+    docs: "📚 Documentation" 
+    style: "🎨 Code Style"
+    refactor: "♻️ Refactoring"
+    perf: "⚡ Performance"
+    test: "✅ Tests"
+    chore: "🔧 Chores"
+    build: "📦 Dependencies"
+    ci: "🌐 CI/CD"
+    break: "🚨 Breaking Changes"
+    breaking: "🚨 Breaking Changes"
+
+# --- SORTING --- #
+sort:
+  by: "date"
+  order: "desc"
+
+# --- INCLUDED DATA --- #
 include:
   commit-hash: false
   commit-author: true
   commit-date: false
-
-sort:
-  by: "date"
-  order: "desc"
+  pull-request-number: true
+  pull-request-title: false
