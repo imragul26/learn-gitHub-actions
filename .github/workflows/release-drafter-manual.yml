@@ -1,5 +1,5 @@
 name: 📦 Create Draft Release (Manual)
-
+ 
 on:
   workflow_dispatch:
     inputs:
@@ -7,9 +7,6 @@ on:
         description: 'Version (e.g., 1.2.3)'
         required: true
         type: string
-
-permissions:
-  contents: write   
  
 jobs:
   update_release_draft:
@@ -22,3 +19,4 @@ jobs:
           version: ${{ github.event.inputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+ 
