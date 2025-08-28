@@ -1,4 +1,4 @@
-name: Release Notes Generator
+name: Generate Release Notes from Commits
 
 on:
   push:
@@ -18,32 +18,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate Commit-based Release Notes
+      - name: Generate Release Notes from Commits
         id: generate_notes
         run: |
-          # Get current tag
+          # Install jq for JSON processing
+          sudo apt-get install -y jq
+          
+          # Get current and previous tags
           CURRENT_TAG="${{ github.ref_name }}"
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 "$CURRENT_TAG"^ 2>/dev/null || echo "")
           
-          # Get previous tag
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 "$CURRENT_TAG"^ 2>/dev/null || git rev-list --max-parents=0 HEAD 2>/dev/null || echo "")
-          
-          # Get commits between tags
+          # Get commits between tags with full information
           if [ -z "$PREVIOUS_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"%s|%an|%h" --reverse)
+            COMMITS_JSON=$(git log --pretty=format:'{"hash":"%H","subject":"%s","author":"%an","author_email":"%ae"}' --reverse | jq -s '.')
           else
-            COMMITS=$(git log --pretty=format:"%s|%an|%h" "$PREVIOUS_TAG".."$CURRENT_TAG" --reverse)
+            COMMITS_JSON=$(git log --pretty=format:'{"hash":"%H","subject":"%s","author":"%an","author_email":"%ae"}' "$PREVIOUS_TAG".."$CURRENT_TAG" --reverse | jq -s '.')
           fi
-
-          # Define commit categories with emojis
+          
+          # Create category mapping
           cat > categories.json << 'EOF'
           {
             "feat": {"title": "🚀 Features", "emoji": "🚀"},
             "feature": {"title": "🚀 Features", "emoji": "🚀"},
-            "add": {"title": "🚀 Features", "emoji": "🚀"},
-            "new": {"title": "🚀 Features", "emoji": "🚀"},
             "fix": {"title": "🐛 Bug Fixes", "emoji": "🐛"},
             "bug": {"title": "🐛 Bug Fixes", "emoji": "🐛"},
-            "patch": {"title": "🐛 Bug Fixes", "emoji": "🐛"},
+            "bugfix": {"title": "🐛 Bug Fixes", "emoji": "🐛"},
             "docs": {"title": "📚 Documentation", "emoji": "📚"},
             "documentation": {"title": "📚 Documentation", "emoji": "📚"},
             "style": {"title": "💄 Code Style", "emoji": "💄"},
@@ -51,19 +50,15 @@ jobs:
             "perf": {"title": "⚡ Performance", "emoji": "⚡"},
             "performance": {"title": "⚡ Performance", "emoji": "⚡"},
             "test": {"title": "✅ Tests", "emoji": "✅"},
-            "tests": {"title": "✅ Tests", "emoji": "✅"},
             "chore": {"title": "🔧 Chores", "emoji": "🔧"},
             "ci": {"title": "👷 CI/CD", "emoji": "👷"},
-            "cd": {"title": "👷 CI/CD", "emoji": "👷"},
             "build": {"title": "📦 Build", "emoji": "📦"},
             "revert": {"title": "⏪ Reverts", "emoji": "⏪"},
-            "security": {"title": "🔒 Security", "emoji": "🔒"},
-            "breaking": {"title": "💥 Breaking Changes", "emoji": "💥"},
-            "breaking-change": {"title": "💥 Breaking Changes", "emoji": "💥"}
+            "security": {"title": "🔒 Security", "emoji": "🔒"}
           }
           EOF
-
-          # Process commits and categorize
+          
+          # Initialize release notes
           echo "# Release Notes - $CURRENT_TAG" > release_notes.md
           echo "" >> release_notes.md
           
@@ -72,82 +67,97 @@ jobs:
           else
             echo "## Initial Release" >> release_notes.md
           fi
-          
           echo "" >> release_notes.md
-
-          # Initialize categories
+          
+          # Process each commit
           declare -A categorized_commits
-          while IFS= read -r commit_line; do
-            IFS='|' read -r message author hash <<< "$commit_line"
+          total_commits=0
+          
+          echo "$COMMITS_JSON" | jq -c '.[]' | while read -r commit; do
+            ((total_commits++))
+            subject=$(echo "$commit" | jq -r '.subject')
+            author=$(echo "$commit" | jq -r '.author')
+            hash=$(echo "$commit" | jq -r '.hash')
             
-            # Extract PR number if present
+            # Extract PR number and clean message
+            clean_subject="$subject"
             pr_number=""
-            if [[ $message =~ pull/([0-9]+) ]]; then
+            mentioned_author=""
+            
+            # Extract PR number from subject
+            if [[ $subject =~ pull/([0-9]+) ]]; then
               pr_number="${BASH_REMATCH[1]}"
+              clean_subject=$(echo "$clean_subject" | sed 's| in https://github.com/[^ ]*||')
             fi
             
-            # Extract author username
-            author_username=""
-            if [[ $message =~ by @([^ ]+) ]]; then
-              author_username="${BASH_REMATCH[1]}"
-            else
-              author_username="$author"
+            # Extract mentioned author
+            if [[ $subject =~ by @([^ ]+) ]]; then
+              mentioned_author="${BASH_REMATCH[1]}"
+              clean_subject=$(echo "$clean_subject" | sed 's| by @[^ ]*||')
             fi
             
-            # Clean message (remove PR references and author info)
-            clean_message=$(echo "$message" | sed -E 's/ by @[^ ]+ in https:\/\/[^ ]+//g' | sed -E 's/ in https:\/\/[^ ]+//g')
+            # Use mentioned author or commit author
+            display_author="${mentioned_author:-$author}"
             
-            # Determine category
-            category="other"
-            emoji="📝"
-            category_title="📝 Other Changes"
-            
-            # Check for conventional commit format
-            if [[ $clean_message =~ ^([a-zA-Z]+)(\([^)]+\))?: ]]; then
-              commit_type=$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')
-              
-              # Look up category
-              if jq -e ".\"$commit_type\"" categories.json > /dev/null 2>&1; then
-                category="$commit_type"
-                category_title=$(jq -r ".\"$commit_type\".title" categories.json)
-                emoji=$(jq -r ".\"$commit_type\".emoji" categories.json)
+            # Determine category from commit message prefix
+            category_key="other"
+            if [[ $clean_subject =~ ^([a-zA-Z]+)(\([^)]+\))?: ]]; then
+              prefix=$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')
+              if jq -e ".\"$prefix\"" categories.json > /dev/null 2>&1; then
+                category_key="$prefix"
               fi
             fi
             
-            # Format commit entry
-            entry="$emoji $clean_message"
+            # Get category info
+            if [ "$category_key" != "other" ]; then
+              category_title=$(jq -r ".\"$category_key\".title" categories.json)
+              emoji=$(jq -r ".\"$category_key\".emoji" categories.json)
+            else
+              category_title="📝 Other Changes"
+              emoji="📝"
+            fi
+            
+            # Format the entry
+            entry="$emoji $clean_subject"
             if [ -n "$pr_number" ]; then
               entry="$entry [#$pr_number](https://github.com/${{ github.repository }}/pull/$pr_number)"
             fi
-            if [ -n "$author_username" ]; then
-              entry="$entry by [@$author_username](https://github.com/$author_username)"
+            if [ -n "$display_author" ]; then
+              entry="$entry by [@$display_author](https://github.com/$display_author)"
             fi
             
-            # Add to categorized array
-            categorized_commits["$category_title"]+="$entry"$'\n'
-            
-          done <<< "$COMMITS"
-
-          # Output categorized commits
-          for category_title in "${!categorized_commits[@]}"; do
-            echo "### $category_title" >> release_notes.md
-            echo "" >> release_notes.md
-            echo "${categorized_commits[$category_title]}" | sort -u >> release_notes.md
-            echo "" >> release_notes.md
+            # Add to category
+            categorized_commits["$category_title"]+="- $entry"$'\n'
           done
-
+          
+          # Output categorized commits
+          for category in "🚀 Features" "🐛 Bug Fixes" "📚 Documentation" "💄 Code Style" "♻️ Refactoring" "⚡ Performance" "✅ Tests" "🔧 Chores" "👷 CI/CD" "📦 Build" "⏪ Reverts" "🔒 Security" "📝 Other Changes"; do
+            if [ -n "${categorized_commits[$category]}" ]; then
+              echo "### $category" >> release_notes.md
+              echo "" >> release_notes.md
+              echo "${categorized_commits[$category]}" >> release_notes.md
+            fi
+          done
+          
           # Add statistics
-          total_commits=$(echo "$COMMITS" | wc -l)
+          category_count=0
+          for category in "${!categorized_commits[@]}"; do
+            if [ -n "${categorized_commits[$category]}" ]; then
+              ((category_count++))
+            fi
+          done
+          
           echo "## 📊 Release Statistics" >> release_notes.md
           echo "" >> release_notes.md
           echo "- **Total commits**: $total_commits" >> release_notes.md
-          echo "- **Categories**: ${#categorized_commits[@]}" >> release_notes.md
+          echo "- **Categories**: $category_count" >> release_notes.md
           echo "" >> release_notes.md
-
-          # Add footer
-          echo "---" >> release_notes.md
-          echo "*Generated automatically from commit messages* 🚀" >> release_notes.md
-
+          
+          # Add full changelog link
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...$CURRENT_TAG" >> release_notes.md
+          fi
+          
           # Set output
           RELEASE_BODY=$(cat release_notes.md)
           echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
@@ -161,28 +171,12 @@ jobs:
           name: Release ${{ github.ref_name }}
           body: ${{ env.RELEASE_BODY }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update CHANGELOG.md
+      - name: Display Generated Notes
         run: |
-          # Prepend new release to CHANGELOG.md
-          if [ -f CHANGELOG.md ]; then
-            echo "$(cat release_notes.md)"$'\n'"$(cat CHANGELOG.md)" > CHANGELOG.md
-          else
-            cp release_notes.md CHANGELOG.md
-          fi
-          
-          # Commit updated changelog
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add CHANGELOG.md
-          git commit -m "docs: update CHANGELOG for ${{ github.ref_name }}"
-          git push
-
-      - name: Show Generated Notes
-        run: |
-          echo "📋 Generated Release Notes:"
+          echo "✅ Generated Release Notes:"
           echo "============================"
           cat release_notes.md
