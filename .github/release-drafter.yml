@@ -4,114 +4,101 @@ tag-template: "v$RESOLVED_VERSION"
 # Categories based on conventional commit types
 categories:
   - title: "🚨 Breaking Changes"
+    labels: ["breaking-change"]
     commit-types: ["breaking", "break"]
-    emoji: "🚨"
   
   - title: "✨ Features"
+    labels: ["feature"]
     commit-types: ["feat", "feature"]
-    emoji: "✨"
   
   - title: "🐛 Bug Fixes"
+    labels: ["bug"]
     commit-types: ["fix", "bug", "bugfix"]
-    emoji: "🐛"
   
   - title: "📚 Documentation"
-    commit-types: ["docs", "documentation"]
-    emoji: "📚"
+    labels: ["documentation"]
+    commit-types: ["docs"]
   
   - title: "🎨 Style Improvements"
+    labels: ["style"]
     commit-types: ["style"]
-    emoji: "🎨"
   
   - title: "♻️ Refactoring"
-    commit-types: ["refactor", "refactoring"]
-    emoji: "♻️"
+    labels: ["refactor"]
+    commit-types: ["refactor"]
   
   - title: "⚡ Performance"
-    commit-types: ["perf", "performance"]
-    emoji: "⚡"
+    labels: ["performance"]
+    commit-types: ["perf"]
   
   - title: "✅ Tests"
-    commit-types: ["test", "tests"]
-    emoji: "✅"
+    labels: ["test"]
+    commit-types: ["test"]
   
   - title: "🔧 Chores & Maintenance"
-    commit-types: ["chore", "maintenance"]
-    emoji: "🔧"
+    labels: ["chore"]
+    commit-types: ["chore"]
   
   - title: "📦 Dependencies"
-    commit-types: ["deps", "dependencies"]
-    emoji: "📦"
+    labels: ["dependencies"]
+    commit-types: ["deps"]
     collapse-after: 2
   
-  - title: "👷 Build System"
-    commit-types: ["build"]
-    emoji: "👷"
-  
-  - title: "🔧 CI/CD"
-    commit-types: ["ci"]
-    emoji: "🔧"
-  
   - title: "📋 Other Changes"
-    commit-types: [] # fallback for unmatched commit types
-    emoji: "📋"
+    labels: []
+    commit-types: []
 
-# Commit message parsing configuration
+# Commit message parser configuration
 commit-parser:
   pattern: "^(\w+)(?:\(([\w\-\.]+)\))?(!)?:\s*(.+)$"
-  types:
+  map:
     feat: "✨ Features"
-    fix: "🐛 Bug Fixes"
+    fix: "🐛 Bug Fixes" 
     docs: "📚 Documentation"
     style: "🎨 Style Improvements"
     refactor: "♻️ Refactoring"
     perf: "⚡ Performance"
     test: "✅ Tests"
     chore: "🔧 Chores & Maintenance"
-    build: "👷 Build System"
-    ci: "🔧 CI/CD"
     deps: "📦 Dependencies"
     breaking: "🚨 Breaking Changes"
 
-# Template for individual changes
+# Template for changes - FIXED to include category grouping
 change-template: |
-  - $EMOJI $TITLE – $AUTHOR (#$NUMBER)
+  - $TITLE$SCOPE – $AUTHOR (#$NUMBER)
 
-# Alternative: Include commit hash and scope
-# change-template: |
-#   - $EMOJI $TITLE$SCOPE – $AUTHOR ($HASH_SHORT)
+# Category template to wrap each section
+category-template: |
+  ## $CATEGORY_TITLE
+  $COMMITS
 
-# Template if there are no matching commits
-no-changes-template: "No significant changes in this release."
-
-# Custom template variables
+# Template variables
 template-variables:
-  EMOJI: $COMMIT_EMOJI
+  CATEGORY_TITLE: $CATEGORY_TITLE_WITH_EMOJI
   SCOPE: $SCOPE_TEMPLATE
   AUTHOR: $COMMIT_AUTHOR
 
-# Custom rendering logic
+# Replacers for dynamic content
 replacers:
-  # Add emoji based on commit type
-  - search: '\$COMMIT_EMOJI'
+  # Add emoji to category title
+  - search: '\$CATEGORY_TITLE_WITH_EMOJI'
     replace: >-
       ${{
-        type === 'feat' && '✨' ||
-        type === 'fix' && '🐛' ||
-        type === 'docs' && '📚' ||
-        type === 'style' && '🎨' ||
-        type === 'refactor' && '♻️' ||
-        type === 'perf' && '⚡' ||
-        type === 'test' && '✅' ||
-        type === 'chore' && '🔧' ||
-        type === 'build' && '👷' ||
-        type === 'ci' && '🔧' ||
-        type === 'deps' && '📦' ||
-        type === 'breaking' && '🚨' ||
-        '📋'
+        title === 'Breaking Changes' && '🚨 Breaking Changes' ||
+        title === 'Features' && '✨ Features' ||
+        title === 'Bug Fixes' && '🐛 Bug Fixes' ||
+        title === 'Documentation' && '📚 Documentation' ||
+        title === 'Style Improvements' && '🎨 Style Improvements' ||
+        title === 'Refactoring' && '♻️ Refactoring' ||
+        title === 'Performance' && '⚡ Performance' ||
+        title === 'Tests' && '✅ Tests' ||
+        title === 'Chores & Maintenance' && '🔧 Chores & Maintenance' ||
+        title === 'Dependencies' && '📦 Dependencies' ||
+        title === 'Other Changes' && '📋 Other Changes' ||
+        title
       }}
   
-  # Add scope in parentheses if present
+  # Add scope if present
   - search: '\$SCOPE_TEMPLATE'
     replace: >-
       ${{
@@ -124,41 +111,39 @@ replacers:
       ${{
         author ? `@${author.split(' ')[0]}` : ''
       }}
+  
+  # Add emoji to individual commit based on type
+  - search: '^- '
+    replace: >-
+      ${{
+        type === 'feat' && '- ✨ ' ||
+        type === 'fix' && '- 🐛 ' ||
+        type === 'docs' && '- 📚 ' ||
+        type === 'style' && '- 🎨 ' ||
+        type === 'refactor' && '- ♻️ ' ||
+        type === 'perf' && '- ⚡ ' ||
+        type === 'test' && '- ✅ ' ||
+        type === 'chore' && '- 🔧 ' ||
+        type === 'deps' && '- 📦 ' ||
+        type === 'breaking' && '- 🚨 ' ||
+        '- 📋 '
+      }}
 
-# Exclude certain commit patterns
+# Exclude patterns
 exclude:
   commits:
     - "^Merge"
     - "^Revert"
     - "^chore\(release\):"
     - "^docs\(changelog\):"
-  patterns:
-    - "skip-changelog"
-    - "no-release-note"
 
-# Include additional commit information
+# Include options
 include:
-  commit-body: false
-  commit-hash: true
+  commit-hash: false
   commit-author: true
   commit-date: false
 
-# Sorting options
+# Sorting
 sort:
   by: "date"
   order: "desc"
-
-# Grouping options
-group-by: "category"
-
-# Output configuration
-output:
-  file: "CHANGELOG.md"
-  mode: "append"
-  header: |
-    # Changelog
-    
-    All notable changes to this project will be documented in this file.
-    
-    The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-    and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
